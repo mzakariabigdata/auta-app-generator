@@ -11,4 +11,3 @@ employee:
     - class: Payroll
       visitor:
         class: PayrollVisitor
-        

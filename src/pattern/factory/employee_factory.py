@@ -15,6 +15,7 @@ class ObjectFactory:
         if class_name is None:
             raise ValueError(f"Class type {class_type} not found in class map")
         obj = class_name(**conf.get("params", {}))
+        print(f"{obj.__class__.__name__}()")
         for key, value in conf.items():
             if key in ["class", "params"]:
                 continue

@@ -9,6 +9,8 @@ from pattern.strategy import ProgressiveTaxStrategy, FlatTaxStrategy
 from pattern.observer import Payroll, TaxAuthority
 from pattern.factory import ObjectFactory
 from employees import FullTimeEmployee
+from mvc import UserService, Service, AnotherService, DependencyContainer
+from lib import OrmCollection, ObjDict, ImprovedList
 
 
 def absolute_path(file):
@@ -25,38 +27,7 @@ def config_to_json(file) -> dict:
 
 
 def main():
-    config = config_to_json("config.yml")
-    employee = FullTimeEmployee("John Doe")
-
-    # Create Payroll and Tax Authority with the tax strategy observers and associate them with their respective visitors
-    payroll = Payroll()
-    payroll.visitor = PayrollVisitor()
-    tax_authority = TaxAuthority()
-    tax_authority.visitor = TaxAuthorityVisitor()
-    tax_authority.strategy = FlatTaxStrategy()
-    # Attach the observers to the employee
-    employee.observer = payroll
-    employee.observer = tax_authority
-    print(employee.__dict__)
-    for op in employee.__dict__.get("_observers"):
-        print(op.__dict__)
-
-    # Resultat
-    print(employee.salary)
-    # Notify the observers that the salary has changed
-    employee.salary = 6000
-    print(employee.salary)
-
-    # Set the tax strategy for the employee
-    employee.tax_strategy = FlatTaxStrategy()
-
-    # Notify the observers that the salary has changed
-    employee.salary = 600
-    print(employee.salary)
-
-
-def main3():
-    class_map = {
+    class_map_employee = {
         "FullTimeEmployee": FullTimeEmployee,
         "Payroll": Payroll,
         "TaxAuthority": TaxAuthority,
@@ -66,14 +37,42 @@ def main3():
     }
 
     print("____Start Objet Creation _____")
-    config = config_to_json("config.yml")
-    employee = ObjectFactory(config.get("employee"), class_map).get_object()
+    config = config_to_json("config_employee.yml")
+    employee = ObjectFactory(config.get("employee"), class_map_employee).get_object()
     print("____End Objet Creation ______\n")
 
     employee.salary = 6000
     print(employee.salary)
 
+    # result1 = user_controller.handle_request('ObjectFactory', class_map_services)
+    # result1 = user_controller.handle_request('ObjectFactory', class_map_employee)
+
+
+def main2():
+    class_map_services = {
+        "DependencyContainer": DependencyContainer,
+        "UserService": UserService,
+        "Service": Service,
+        "AnotherService": AnotherService,
+    }
+    print("____Start Objet Creation _____")
+    config = config_to_json("config_services.yml")
+    dependency_container = ObjectFactory(
+        config.get("dependency_container"), class_map_services
+    ).get_object()
+    print(dependency_container.__dict__)
+    print("____End Objet Creation ______\n")
+
+
+def main3():
+    lst = OrmCollection(["apple", "banana", "orange", "f", "pear", "orange"])
+    from collections import OrderedDict
+
+    a = ["apple", "banana", "orange", "f", "pear", "orange"]
+    k = OrderedDict.fromkeys(a)
+    print(list(k))
 
 if __name__ == "__main__":
     # main()
+    # main2()
     main3()
