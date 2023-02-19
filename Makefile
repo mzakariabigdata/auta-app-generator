@@ -13,6 +13,9 @@ env-create:
 # Supprime l'environnement virtuel "pattern" créé précédemment avec conda.
 env-delete:
 	conda env remove -n pattern
+# Ajouter costums variables au Shell
+env-variables:
+	. ./.env.sh
 # Récupérer la liste des extensions installées dans VS Code
 get-vscode-extensions:
 	code --list-extensions >> vscode-extensions.txt
@@ -42,7 +45,7 @@ install-requirements-prod: requirements-prod
 install-requirements-dev: requirements-dev
 	pip3 install -r requirements-dev.txt
 
-.PHONY: env-activate env-create kivy-install env-init requirements-prod requirements-dev install-requirements-prod install-requirements-dev requirements-lock get-vscode-extensions install-vscode-extensions
+.PHONY: env-activate env-create kivy-install env-init requirements-prod requirements-dev install-requirements-prod install-requirements-dev requirements-lock get-vscode-extensions install-vscode-extensions env-variables
 
 ###################
 ###### Build ######
@@ -94,3 +97,24 @@ docs: clean-docs
 	# cd docs && make html
 clean-docs:
 	rm -rf "$(BUILDDIR)"
+
+##########################
+###### Change logs #######
+##########################
+
+DOCSDIR			:= 2.0.0
+
+add-fragments:
+	towncrier create --config towncrier.toml --content 'Can also be ``rst`` as well!' 3452.doc.rst
+# Génère les fichiers .rst pour chaque section de changelog
+newsfragment:
+	towncrier --draft --yes
+
+# Génère les fichiers de sortie pour les nouvelles sections de changelog
+build-news:
+	towncrier --yes
+
+costum-changelogs:
+	cd changelogs/costum && python changelogs.py
+
+.PHONY: newsfragment add-fragments build-news costum-changelogs

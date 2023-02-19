@@ -72,6 +72,7 @@ def main3():
     k = OrderedDict.fromkeys(a)
     print(list(k))
 
+
 if __name__ == "__main__":
     # main()
     # main2()
