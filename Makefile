@@ -69,7 +69,7 @@ cov:
 	python -m pytest -vvv --cov-report term-missing:skip-covered --cov-report=html:reports/ --cov=src/lib tests/
 # Exécute les tests unitaires et génère un rapport de couverture de code au format XML dans le dossier reports/.
 cov-xml:
-	python -m pytest --cov=src/lib --cov-report xml:reports/coverage.xml tests/
+	python -m pytest  -vvv --cov=src/lib --cov-report xml:reports/coverage.xml tests/
 # Nettoie les fichiers générés précédemment en utilisant l'outil pyclean.
 clean-py:
 	pyclean . -q
