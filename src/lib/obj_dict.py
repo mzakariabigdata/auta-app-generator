@@ -4,6 +4,7 @@ from src.lib.orm_collection import OrmCollection
 # class ObjDictException(AttributeError):
 #     """Associated objdixt Exception"""
 
+
 class ObjDict(dict):
     """Dynamic Class as dict"""
 

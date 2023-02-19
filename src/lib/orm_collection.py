@@ -3,50 +3,52 @@ from src.lib.improved_list import ImprovedList
 from src.lib.exception import BaseMultipleFound, BaseNotFound
 from collections import OrderedDict
 
+
 class OrmCollection(ImprovedList):
     """
     A list-like collection class that extends ImprovedList and that implements an ORM overlay (wrapper) for a list of objects,
     providing an interface and additional methods for querying and manipulating objects in the list.
     """
+
     def where(self, **kwargs) -> "OrmCollection":
         """
         Filters the collection to only include objects that match the provided criteria.
 
         Args:
-            **kwargs: Key-value (Dictionary) of field names and values to filter by.
+            **kwargs (dict): Key-value pairs of field names and values to filter by.
+                Valid operators include "lt", "gt", "lte", "gte", "endswith", "startswith", "in", "nin", "contains".
+                If an invalid operator is used, a ValueError is raised.
 
         Returns:
-            A new OrmCollection containing only objects where all given attributes match.
+            OrmCollection: A new OrmCollection containing only objects where all given attributes match.
 
         Raises:
-            N/A
+            ValueError: If an invalid operator is used.
         """
+        op_funcs = {
+            "lt": lambda x, y: x < y,
+            "gt": lambda x, y: x > y,
+            "endswith": lambda x, y: x.endswith(y),
+            "startswith": lambda x, y: x.startswith(y),
+            "in": lambda x, y: x in y,
+            "contains": lambda x, y: y in x,
+            "nin": lambda x, y: x not in y,
+            "not": lambda x, y: x != y,
+            "lte": lambda x, y: x <= y,
+            "gte": lambda x, y: x >= y,
+        }
+
         results = self.__class__()
         for elm in self:
             matches = True
             for key, value in kwargs.items():
                 attribute, operator = key.split("__") if "__" in key else (key, None)
                 attr_value = getattr(elm, attribute)
-                if operator == "lt":
-                    matches = matches and attr_value < value
-                elif operator == "gt":
-                    matches = matches and attr_value > value
-                elif operator == "endswith":
-                    matches = matches and attr_value.endswith(value)
-                elif operator == "startswith":
-                    matches = matches and attr_value.startswith(value)
-                elif operator == "in":
-                    matches = matches and attr_value in value
-                elif operator == "contains":
-                    matches = matches and value in attr_value 
-                elif operator == "nin":
-                    matches = matches and attr_value not in value
-                elif operator == "not":
-                    matches = matches and attr_value != value
-                elif operator == "lte":
-                    matches = matches and attr_value <= value
-                elif operator == "gte":
-                    matches = matches and attr_value >= value
+                if operator is not None and operator not in op_funcs:
+                    raise ValueError(f"Invalid operator {operator}")
+                if operator in op_funcs:
+                    op_func = op_funcs.get(operator, lambda x, y: x == y)
+                    matches = matches and op_func(attr_value, value)
                 elif self.contains_regex(value):
                     matches = matches and re.match(value, attr_value)
                 else:
@@ -75,16 +77,16 @@ class OrmCollection(ImprovedList):
             BaseNotFound: If no objects are found that match the given attributes.
             BaseMultipleFound: If more than one object is found that matches the given attributes.
         """
-        matching_objs  = self.where(**kwargs)
-        if len(matching_objs) == 0 :
+        matching_objs = self.where(**kwargs)
+        if len(matching_objs) == 0:
             raise BaseNotFound(f"No {self.__class__.__name__} found for {kwargs}")
-        if len(matching_objs ) > 1:
+        if len(matching_objs) > 1:
             raise BaseMultipleFound(
                 f"More than one {self.__class__.__name__} found for {kwargs}"
             )
         return matching_objs.first()
 
-    def order_by(self,  key=None, reverse=False):
+    def order_by(self, key=None, reverse=False):
         """
         Sort the objects in the collection based on a field or a custom function.
 
@@ -104,12 +106,14 @@ class OrmCollection(ImprovedList):
                 return self.__class__(sorted(self))
             raise ValueError("All elements in the list must be integers or floats.")
         if isinstance(key, str):
-            return self.__class__(sorted(self, key=lambda x: getattr(x, key), reverse=reverse))
+            return self.__class__(
+                sorted(self, key=lambda x: getattr(x, key), reverse=reverse)
+            )
         elif callable(key):
             return self.__class__(sorted(self, key=key, reverse=reverse))
         else:
             raise TypeError("key must be a string attribute name or a function")
-    
+
     def group_by(self, key_func):
         """
         Group the objects in the collection based on a given function.
@@ -216,13 +220,13 @@ class OrmCollection(ImprovedList):
 
         for field in args:
             if not hasattr(self[0], field):
-                raise AttributeError(f"Le champ '{field}' n'existe pas dans la classe {self[0].__class__.__name__}.")
-
+                raise AttributeError(
+                    f"Le champ '{field}' n'existe pas dans la classe {self[0].__class__.__name__}."
+                )
 
         distinct_values = []
         seen = set()
         for elm in self:
-
             # distinct_values.append(tuple(getattr(elm, field) for field in args))
             values = tuple(getattr(elm, field) for field in args)
             if values not in seen:
@@ -247,4 +251,3 @@ class OrmCollection(ImprovedList):
         except (re.error, TypeError):
             return False
         return True
-        

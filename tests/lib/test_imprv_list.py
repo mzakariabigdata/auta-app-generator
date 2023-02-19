@@ -2,6 +2,7 @@ from src.lib import ImprovedList
 from io import StringIO
 import sys
 
+
 def test_inspect():
     # Test display an empty list
     empty_list = ImprovedList()
@@ -16,8 +17,10 @@ def test_inspect():
     complex_list.inspect
 
     # Test display a list with several elements of different types nested
-    
-    complex_list = ImprovedList([1, "string", [1, 2], {"a": 1, "b": {"z": 1, "m": [1, 2]}}])
+
+    complex_list = ImprovedList(
+        [1, "string", [1, 2], {"a": 1, "b": {"z": 1, "m": [1, 2]}}]
+    )
     complex_list.inspect
 
     # Test that inspect method is called on element with inspect method defined
@@ -33,7 +36,11 @@ def test_inspect():
     sys.stdout = captured_output  # rediriger la sortie standard vers StringIO
     inspectable_list.inspect == 5  # appeler la méthode inspect() sur la liste
     sys.stdout = sys.__stdout__  # remettre la sortie standard à sa valeur par défaut
-    assert captured_output.getvalue() == "ImprovedList(Inspectable) data:\nInspectable(element1)\nInspectable(element2)\n"# la chaîne de caractères attendue pour la sortie de la méthode
+    assert (
+        captured_output.getvalue()
+        == "ImprovedList(Inspectable) data:\nInspectable(element1)\nInspectable(element2)\n"
+    )  # la chaîne de caractères attendue pour la sortie de la méthode
+
 
 def test_first():
     # Test getting the first element of a list
@@ -72,10 +79,13 @@ def test_map():
         def __init__(self, name, age):
             self.name = name
             self.age = age
+
         def upper_name(self):
             return self.name.upper()
 
-    people_list = ImprovedList([Person("Alice", 25), Person("Bob", 30), Person("Charlie", 35)])
+    people_list = ImprovedList(
+        [Person("Alice", 25), Person("Bob", 30), Person("Charlie", 35)]
+    )
     assert people_list.map("name") == ImprovedList(["Alice", "Bob", "Charlie"])
     assert people_list.map("age") == ImprovedList([25, 30, 35])
-    assert people_list.map(":upper_name") == ImprovedList(['ALICE', 'BOB', 'CHARLIE'])
+    assert people_list.map(":upper_name") == ImprovedList(["ALICE", "BOB", "CHARLIE"])

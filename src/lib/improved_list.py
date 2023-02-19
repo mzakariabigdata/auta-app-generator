@@ -1,5 +1,6 @@
 import pprint
 
+
 class ImprovedList(list):
     """Dynamic Class as dict"""
 
