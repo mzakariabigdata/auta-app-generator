@@ -1,4 +1,5 @@
 import re
+from typing import Any
 from src.lib.improved_list import ImprovedList
 from src.lib.exception import BaseMultipleFound, BaseNotFound
 from collections import OrderedDict
@@ -26,16 +27,36 @@ class OrmCollection(ImprovedList):
             ValueError: If an invalid operator is used.
         """
         op_funcs = {
-            "lt": lambda x, y: x < y,
-            "gt": lambda x, y: x > y,
-            "endswith": lambda x, y: x.endswith(y),
-            "startswith": lambda x, y: x.startswith(y),
-            "in": lambda x, y: x in y,
-            "contains": lambda x, y: y in x,
-            "nin": lambda x, y: x not in y,
-            "not": lambda x, y: x != y,
-            "lte": lambda x, y: x <= y,
-            "gte": lambda x, y: x >= y,
+            "lt": lambda x, y: x < y
+            if type(x) == type(y)
+            else self.raise_type_error("<", x, y),
+            "gt": lambda x, y: x > y
+            if type(x) == type(y)
+            else self.raise_type_error(">", x, y),
+            "endswith": lambda x, y: x.endswith(y)
+            if isinstance(x, str) and isinstance(y, str)
+            else self.raise_type_error("endswith", x, y),
+            "startswith": lambda x, y: x.startswith(y)
+            if isinstance(x, str) and isinstance(y, str)
+            else self.raise_type_error("startswith", x, y),
+            "in": lambda x, y: x in y
+            if type(y) in (list, set)
+            else self.raise_type_error("in", x, y),
+            "contains": lambda x, y: y in x
+            if isinstance(x, str) and isinstance(y, str)
+            else self.raise_type_error("contains", x, y),
+            "nin": lambda x, y: x not in y
+            if type(y) in (list, set)
+            else self.raise_type_error("nin", x, y),
+            "not": lambda x, y: x != y
+            if type(x) == type(y)
+            else self.raise_type_error("!=", x, y),
+            "lte": lambda x, y: x <= y
+            if type(x) == type(y)
+            else self.raise_type_error("<=", x, y),
+            "gte": lambda x, y: x >= y
+            if type(x) == type(y)
+            else self.raise_type_error(">=", x, y),
         }
 
         results = self.__class__()
@@ -47,13 +68,12 @@ class OrmCollection(ImprovedList):
                 if operator is not None and operator not in op_funcs:
                     raise ValueError(f"Invalid operator {operator}")
                 if operator in op_funcs:
-                    op_func = op_funcs.get(operator, lambda x, y: x == y)
+                    op_func = op_funcs.get(operator)
                     matches = matches and op_func(attr_value, value)
                 elif self.contains_regex(value):
                     matches = matches and re.match(value, attr_value)
                 else:
                     matches = matches and attr_value == value
-
                 if not matches:
                     break
 
@@ -235,6 +255,22 @@ class OrmCollection(ImprovedList):
 
         # return self.__class__(list(dict.fromkeys(distinct_values)))
         return self.__class__(distinct_values)
+
+    def raise_type_error(self, op: str, x: Any, y: Any) -> None:
+        """
+        Raises a TypeError indicating that the given operands are not supported for a given operator.
+
+        Args:
+            op (str): The operator that caused the TypeError.
+            x (Any): The first operand of the operator.
+            y (Any): The second operand of the operator.
+
+        Raises:
+            TypeError: If the given operands are not supported for the given operator.
+        """
+        raise TypeError(
+            f"unsupported operand type(s) for {op}: '{type(x).__name__}' and '{type(y).__name__}'"
+        )
 
     def contains_regex(self, s):
         """

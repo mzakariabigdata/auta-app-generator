@@ -65,12 +65,19 @@ def main2():
 
 
 def main3():
-    lst = OrmCollection(["apple", "banana", "orange", "f", "pear", "orange"])
-    from collections import OrderedDict
+    my_orm_collection = OrmCollection(
+        [
+            ObjDict({"name": "Alice", "age": 25, "gender": "female"}),
+            ObjDict({"name": "Bob", "age": 40, "gender": "male"}),
+            ObjDict({"name": "Charlie", "age": 30, "gender": "male"}),
+            ObjDict({"name": "Dave", "age": 30, "gender": "male"}),
+        ]
+    )
 
-    a = ["apple", "banana", "orange", "f", "pear", "orange"]
-    k = OrderedDict.fromkeys(a)
-    print(list(k))
+    results = my_orm_collection.where(age__gt=25, name__contains="v")
+    print(results)
+    results2 = my_orm_collection.where((("age", "lte", 30),) | (("name", "startswith", "A"),))
+    print(results2)
 
 
 if __name__ == "__main__":

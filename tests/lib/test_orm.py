@@ -28,6 +28,14 @@ def my_orm_collection():
             {"Charlie", "Dave"},
         ),  # Test finding all elements with name containing the letter "a"
         (
+            {"age__gt": 25, "name__contains": "v"},
+            {"Dave"},
+        ),  # Test all objects where age is greater than 25 and name contains "v" (test two conditions)
+        (
+            {"age__gt": "25"},
+            TypeError,
+        ),  # Test TypeError
+        (
             {"name": re.compile(r".*z.*", re.IGNORECASE)},
             set(),
         ),  # Test finding all elements with name containing the letter "z"
@@ -48,6 +56,10 @@ def my_orm_collection():
             {"Alice", "Bob", "Charlie", "Dave"},
         ),  # Test finding all elements with no params (should return all elements)
         (
+            {},
+            re.error,
+        ),  # Test if an invalid regular expression is used.
+        (
             {"age": 100},
             set(),
         ),  # Test finding all elements with age equal to 100 (should return an empty set)
@@ -66,14 +78,22 @@ def my_orm_collection():
     ],
 )
 def test_where(my_orm_collection, query, expected_names):
-    # Test finding elements with the given query
-    results = my_orm_collection.where(**query)
-    assert len(results) == len(expected_names)
-    assert set([result["name"] for result in results]) == expected_names
+    # Test finding elements with a regular expression that raises a re.error
+    if expected_names == re.error:
+        with pytest.raises(re.error):
+            my_orm_collection.where(name=re.compile("["))
+    elif expected_names == TypeError:
+        with pytest.raises(TypeError):
+            my_orm_collection.where(**query)
+    else:
+        # Test finding elements with the given query
+        results = my_orm_collection.where(**query)
+        assert len(results) == len(expected_names)
+        assert set([result["name"] for result in results]) == expected_names
 
-    # Test that where function returns a new OrmCollection instance
-    results = my_orm_collection.where(age=25)
-    assert my_orm_collection != results
+        # Test that where function returns a new OrmCollection instance
+        results = my_orm_collection.where(age=25)
+        assert my_orm_collection != results
 
 
 @pytest.mark.parametrize(
