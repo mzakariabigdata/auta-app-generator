@@ -76,7 +76,7 @@ def main3():
 
     results = my_orm_collection.where(age__gt=25, name__contains="v")
     print(results)
-    results2 = my_orm_collection.where((("age", "lte", 30),) | (("name", "startswith", "A"),))
+    results2 = my_orm_collection.where(Q(("age", "lte", 30)) | Q(("name", "startswith", "A")))
     print(results2)
 
 
