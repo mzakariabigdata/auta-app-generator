@@ -1,0 +1,13 @@
+employee:
+  class: FullTimeEmployee
+  params:
+    name: John Doe
+  observer:
+    - class: TaxAuthority
+      visitor:
+        class: TaxAuthorityVisitor
+      strategy:
+        class: FlatTaxStrategy
+    - class: Payroll
+      visitor:
+        class: PayrollVisitor

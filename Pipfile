@@ -1,0 +1,20 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pyyaml = "*"
+
+[dev-packages]
+pyclean = "*"
+pylint = "*"
+black = "*"
+pytest = "*"
+pytest-mock = "*"
+pytest-cov = "*"
+pytest-html = "*"
+pytest-describe = "*"
+sphinx = "*"
+sphinxcontrib-apidoc = "*"
+towncrier = "*"

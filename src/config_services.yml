@@ -1,0 +1,6 @@
+dependency_container:
+  class: DependencyContainer
+  service:
+    - class: UserService
+    - class: Service
+    - class: AnotherService

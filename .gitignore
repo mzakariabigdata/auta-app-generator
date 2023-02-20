@@ -14,7 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -45,7 +44,8 @@ htmlcov/
 .coverage.*
 .cache
 nosetests.xml
-coverage.xml
+reports/*
+!coverage.xml
 *.cover
 *.py,cover
 .hypothesis/

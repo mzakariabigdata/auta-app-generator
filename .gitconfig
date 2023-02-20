@@ -1,0 +1,8 @@
+[user]
+        name = Morchid Zakaria
+        email = morchid.zakariaa@gmail.com
+[alias]
+        hist = log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short
+        amend = commit --amend -C HEAD -a
+        co = checkout
+        fast = !git add . && git commit --amend -C HEAD -a && git push -f
