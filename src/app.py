@@ -75,18 +75,6 @@ def main3():
         ]
     )
 
-    query1 = Query([Filter("age", "gt", 25), Filter("country", None, "France")])
-
-    query2 = Query(
-        [Filter("name__startswith", None, "J"), Filter("country", None, "Spain")]
-    )
-
-    query_and = query1 & query2
-    query_or = query1 | query2
-
-    # print(query_or)
-    # print(query_and)
-
     query_1 = Query(
         [
             Filter("age", None, 30),
@@ -94,24 +82,18 @@ def main3():
     )
     query_2 = Query(
         [
-            Filter("age", None, 30),
-            Filter("name", "startswith", "D"),
+            Filter("age", None, 40),
         ]
     )
-    query_3 = query_1 & query_2
-    query_4 = query_1 | query_2
-    query = Query(
+    query_10 = Query(
         [
-            Filter("age", None, 30),
-            # Filter("gender", None, "male"),
-            Filter("name", "startswith", "D"),
-            # Filter("country", None, "France")
+            Filter("name", "startswith", "A"),
         ]
     )
 
-    # print(query_3.__dict__)
-    # print(query_4.__dict__)
-    results = my_orm_collection.where(name= "^A.*")
+    query_3 = query_1 & query_2
+    query_4 = (query_1 | query_2)
+    results = my_orm_collection.where(query_4 | query_10)
     print(results)
     # results2 = my_orm_collection.where(
     #     Q(("age", "lte", 30)) | Q(("name", "startswith", "A"))

@@ -130,6 +130,10 @@ def test_where(my_orm_collection, query, expected_names):
             & Query([Filter("name", "startswith", "D")]),
             {"Dave"},
         ),
+        (
+            Query([Filter("age", None, 30)]) | Query([Filter("age", None, 40)]),
+            {"Dave", "Bob", "Charlie"},
+        ),
     ],
 )
 def test_where_query(my_orm_collection, query, expected_names):

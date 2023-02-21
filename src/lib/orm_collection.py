@@ -56,7 +56,7 @@ class Filter:
             return re.match(self.value, attr_value)
         else:
             return attr_value == self.value
-    
+
     def contains_regex(self, s):
         """
         Checks whether a string contains a regular expression.
@@ -136,7 +136,12 @@ class Query:
         return Query([self, other])
 
     def evaluate(self, obj):
-        return all(filter.evaluate(obj) for filter in self.filters)
+        if isinstance(self.filters[0], Query):
+            # opération OR
+            return any(subquery.evaluate(obj) for subquery in self.filters)
+        else:
+            # opération AND
+            return all(filter.evaluate(obj) for filter in self.filters)
 
 
 class OrmCollection(ImprovedList):
@@ -177,14 +182,10 @@ class OrmCollection(ImprovedList):
             else:
                 filters.append(Filter(key, None, value))
 
-        print(len(filters))
         for elm in self:
-            matches = True
-            for filter_ in filters:
-                matches = matches and filter_.evaluate(elm)
-                if not matches:
-                    break
-            if matches:
+            if any(query.evaluate(elm) for query in args) or all(
+                filt.evaluate(elm) for filt in filters
+            ):
                 results.append(elm)
 
         return results
@@ -362,19 +363,3 @@ class OrmCollection(ImprovedList):
 
         # return self.__class__(list(dict.fromkeys(distinct_values)))
         return self.__class__(distinct_values)
-
-    def contains_regex(self, s):
-        """
-        Checks whether a string contains a regular expression.
-
-        Args:
-            s (str): The string to check.
-
-        Returns:
-            True if the string contains a regular expression, False otherwise.
-        """
-        try:
-            re.compile(s)
-        except (re.error, TypeError):
-            return False
-        return True
