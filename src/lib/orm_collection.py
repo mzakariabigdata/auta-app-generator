@@ -4,19 +4,52 @@ from src.lib.improved_list import ImprovedList
 from src.lib.exception import BaseMultipleFound, BaseNotFound
 from collections import OrderedDict
 
+
 class Filter:
     op_funcs = {
-        "lt": lambda x, y: x < y if type(x) == type(y) else Filter.raise_type_error("<", x, y),
-        "gt": lambda x, y: x > y if type(x) == type(y) else Filter.raise_type_error(">", x, y),
-        "endswith": lambda x, y: x.endswith(y) if isinstance(x, str) and isinstance(y, str) else Filter.raise_type_error("endswith", x, y),
-        "startswith": lambda x, y: x.startswith(y) if isinstance(x, str) and isinstance(y, str) else Filter.raise_type_error("startswith", x, y),
-        "in": lambda x, y: x in y if type(y) in (list, set) else Filter.raise_type_error("in", x, y),
-        "contains": lambda x, y: y in x if isinstance(x, str) and isinstance(y, str) else Filter.raise_type_error("contains", x, y),
-        "nin": lambda x, y: x not in y if type(y) in (list, set) else Filter.raise_type_error("nin", x, y),
-        "not": lambda x, y: x != y if type(x) == type(y) else Filter.raise_type_error("!=", x, y),
-        "lte": lambda x, y: x <= y if type(x) == type(y) else Filter.raise_type_error("<=", x, y),
-        "gte": lambda x, y: x >= y if type(x) == type(y) else Filter.raise_type_error(">=", x, y),
+        "lt": lambda x, y: x < y
+        if type(x) == type(y)
+        else Filter.raise_type_error("<", x, y),
+        "gt": lambda x, y: x > y
+        if type(x) == type(y)
+        else Filter.raise_type_error(">", x, y),
+        "endswith": lambda x, y: x.endswith(y)
+        if isinstance(x, str) and isinstance(y, str)
+        else Filter.raise_type_error("endswith", x, y),
+        "startswith": lambda x, y: x.startswith(y)
+        if isinstance(x, str) and isinstance(y, str)
+        else Filter.raise_type_error("startswith", x, y),
+        "in": lambda x, y: x in y
+        if type(y) in (list, set)
+        else Filter.raise_type_error("in", x, y),
+        "contains": lambda x, y: y in x
+        if isinstance(x, str) and isinstance(y, str)
+        else Filter.raise_type_error("contains", x, y),
+        "nin": lambda x, y: x not in y
+        if type(y) in (list, set)
+        else Filter.raise_type_error("nin", x, y),
+        "not": lambda x, y: x != y
+        if type(x) == type(y)
+        else Filter.raise_type_error("!=", x, y),
+        "lte": lambda x, y: x <= y
+        if type(x) == type(y)
+        else Filter.raise_type_error("<=", x, y),
+        "gte": lambda x, y: x >= y
+        if type(x) == type(y)
+        else Filter.raise_type_error(">=", x, y),
     }
+
+    def __init__(self, attribute, operator, value):
+        self.attribute = attribute
+        self.operator = operator
+        self.value = value
+
+    def evaluate(self, obj):
+        attr_value = getattr(obj, self.attribute)
+        if self.operator in self.op_funcs:
+            return self.op_funcs[self.operator](attr_value, self.value)
+        else:
+            raise ValueError(f"Invalid operator {self.operator}")
 
     @staticmethod
     def raise_type_error(op: str, x: Any, y: Any) -> None:
@@ -35,13 +68,62 @@ class Filter:
             f"unsupported operand type(s) for {op}: '{type(x).__name__}' and '{type(y).__name__}'"
         )
 
+
+class Query:
+    """
+    query1 = Query([
+    Filter("age", "gt", 25),
+    Filter("country", None, "France")
+        ])
+
+    query2 = Query([
+        Filter("name__startswith", None, "J"),
+        Filter("country", None, "Spain")
+    ])
+
+    # AND
+    query_and = query1 & query2
+    # équivaut à Query([
+    #    Filter("age", "gt", 25),
+    #    Filter("country", None, "France"),
+    #    Filter("name__startswith", None, "J"),
+    #    Filter("country", None, "Spain")
+    # ])
+
+    # OR
+    query_or = query1 | query2
+    # équivaut à Query([
+    #    Query([
+    #        Filter("age", "gt", 25),
+    #        Filter("country", None, "France")
+    #    ]),
+    #    Query([
+    #        Filter("name__startswith", None, "J"),
+    #        Filter("country", None, "Spain")
+    #    ])
+    # ])
+    """
+
+    def __init__(self, filters):
+        self.filters = filters
+
+    def __and__(self, other):
+        return Query(self.filters + other.filters)
+
+    def __or__(self, other):
+        return Query([self, other])
+
+    def evaluate(self, obj):
+        return all(filter.evaluate(obj) for filter in self.filters)
+
+
 class OrmCollection(ImprovedList):
     """
     A list-like collection class that extends ImprovedList and that implements an ORM overlay (wrapper) for a list of objects,
     providing an interface and additional methods for querying and manipulating objects in the list.
     """
 
-    def where(self, **kwargs) -> "OrmCollection":
+    def where(self, *args, **kwargs) -> "OrmCollection":
         """
         Filters the collection to only include objects that match the provided criteria.
 
@@ -56,24 +138,41 @@ class OrmCollection(ImprovedList):
         Raises:
             ValueError: If an invalid operator is used.
         """
-        
+
         results = self.__class__()
+        filters = []
+        for query in args:
+            for filter_ in query.filters:
+                print(filter_)
+                if "__" in filter_.attribute:
+                    raise ValueError("Invalid condition, cannot mixte filters")
+                filters.append(filter_)
+
+        for key, value in kwargs.items():
+            if "__" in key:
+                attribute, operator = key.split("__")
+                if operator not in Filter.op_funcs:
+                    raise ValueError(f"Invalid operator {operator}")
+                filters.append(Filter(attribute, operator, value))
+            else:
+                filters.append(Filter(key, None, value))
+
+        print(len(filters))
         for elm in self:
             matches = True
-            for key, value in kwargs.items():
-                attribute, operator = key.split("__") if "__" in key else (key, None)
-                attr_value = getattr(elm, attribute)
-                if operator is not None and operator not in Filter.op_funcs:
-                    raise ValueError(f"Invalid operator {operator}")
-                if operator in Filter.op_funcs:
-                    matches = matches and Filter.op_funcs[operator](attr_value, value)
-                elif self.contains_regex(value):
-                    matches = matches and re.match(value, attr_value)
+            for filter_ in filters:
+                attr_value = getattr(elm, filter_.attribute)
+                # matches = matches and filter_.evaluate(elm)
+                if filter_.operator is not None:
+                    matches = matches and filter_.evaluate(elm)
+                elif self.contains_regex(filter_.value):
+                    print(filter_.attribute, matches)
+                    matches = matches and re.match(filter_.value, attr_value)
                 else:
-                    matches = matches and attr_value == value
+                    # print("_____________", filter_.__dict__, attr_value, matches and attr_value == filter_.value)
+                    matches = matches and attr_value == filter_.value
                 if not matches:
                     break
-
             if matches:
                 results.append(elm)
 

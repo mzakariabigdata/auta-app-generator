@@ -1,6 +1,13 @@
 import pytest
 import re
-from src.lib import OrmCollection, ObjDict, BaseMultipleFound, BaseNotFound
+from src.lib import (
+    OrmCollection,
+    ObjDict,
+    BaseMultipleFound,
+    BaseNotFound,
+    Query,
+    Filter,
+)
 
 
 @pytest.fixture
@@ -23,6 +30,10 @@ def my_orm_collection():
             {"gender": "male", "age": 30},
             {"Charlie", "Dave"},
         ),  # Test finding all elements with gender equal to male and age equal to 30
+        (
+            Query([Filter("age", None, 30)]),
+            {"Charlie", "Dave"},
+        ),  # Test finding all elements with gender equal to male and age equal to 30 with Query
         (
             {"name": ".*a.*"},
             {"Charlie", "Dave"},
@@ -75,6 +86,10 @@ def my_orm_collection():
             {"name": "^A.*|.*e$"},
             {"Alice", "Dave", "Charlie"},
         ),  # Test finding all elements with name starting with "A" or ending with "e"
+        (
+            Query([Filter("age", "test_not_op", 30)]),
+            ValueError,
+        ),  # Test not valid operator,
     ],
 )
 def test_where(my_orm_collection, query, expected_names):
@@ -85,6 +100,13 @@ def test_where(my_orm_collection, query, expected_names):
     elif expected_names == TypeError:
         with pytest.raises(TypeError):
             my_orm_collection.where(**query)
+    elif expected_names == ValueError:
+        with pytest.raises(ValueError):
+            my_orm_collection.where(query)
+    elif isinstance(query, Query):
+        results = my_orm_collection.where(query)
+        assert len(results) == len(expected_names)
+        assert set([result["name"] for result in results]) == expected_names
     else:
         # Test finding elements with the given query
         results = my_orm_collection.where(**query)
@@ -94,6 +116,26 @@ def test_where(my_orm_collection, query, expected_names):
         # Test that where function returns a new OrmCollection instance
         results = my_orm_collection.where(age=25)
         assert my_orm_collection != results
+
+
+@pytest.mark.parametrize(
+    "query, expected_names",
+    [
+        (
+            Query([Filter("age", None, 30)]) & Query([Filter("age", None, 30)]),
+            {"Dave", "Charlie"},
+        ),
+        (
+            Query([Filter("age", None, 30)])
+            & Query([Filter("name", "startswith", "D")]),
+            {"Dave"},
+        ),
+    ],
+)
+def test_where_query(my_orm_collection, query, expected_names):
+    results = my_orm_collection.where(query)
+    assert len(results) == len(expected_names)
+    assert set([result["name"] for result in results]) == expected_names
 
 
 @pytest.mark.parametrize(

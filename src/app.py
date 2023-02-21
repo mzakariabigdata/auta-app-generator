@@ -3,6 +3,7 @@
 import os
 import yaml
 import json
+from datetime import date
 
 from pattern.visitor import PayrollVisitor, TaxAuthorityVisitor
 from pattern.strategy import ProgressiveTaxStrategy, FlatTaxStrategy
@@ -10,7 +11,7 @@ from pattern.observer import Payroll, TaxAuthority
 from pattern.factory import ObjectFactory
 from employees import FullTimeEmployee
 from mvc import UserService, Service, AnotherService, DependencyContainer
-from lib import OrmCollection, ObjDict, ImprovedList
+from lib import OrmCollection, ObjDict, ImprovedList, Query, Filter
 
 
 def absolute_path(file):
@@ -74,10 +75,48 @@ def main3():
         ]
     )
 
-    results = my_orm_collection.where(age__gt=25, name__contains="v")
+    query1 = Query([Filter("age", "gt", 25), Filter("country", None, "France")])
+
+    query2 = Query(
+        [Filter("name__startswith", None, "J"), Filter("country", None, "Spain")]
+    )
+
+    query_and = query1 & query2
+    query_or = query1 | query2
+
+    # print(query_or)
+    # print(query_and)
+
+    query_1 = Query(
+        [
+            Filter("age", None, 30),
+        ]
+    )
+    query_2 = Query(
+        [
+            Filter("age", None, 30),
+            Filter("name", "startswith", "D"),
+        ]
+    )
+    query_3 = query_1 & query_2
+    query_4 = query_1 | query_2
+    query = Query(
+        [
+            Filter("age", None, 30),
+            # Filter("gender", None, "male"),
+            Filter("name", "startswith", "D"),
+            # Filter("country", None, "France")
+        ]
+    )
+
+    # print(query_3.__dict__)
+    # print(query_4.__dict__)
+    results = my_orm_collection.where(query_3)
     print(results)
-    results2 = my_orm_collection.where(Q(("age", "lte", 30)) | Q(("name", "startswith", "A")))
-    print(results2)
+    # results2 = my_orm_collection.where(
+    #     Q(("age", "lte", 30)) | Q(("name", "startswith", "A"))
+    # )
+    # print(results2)
 
 
 if __name__ == "__main__":
