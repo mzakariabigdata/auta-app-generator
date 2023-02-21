@@ -46,10 +46,32 @@ class Filter:
 
     def evaluate(self, obj):
         attr_value = getattr(obj, self.attribute)
-        if self.operator in self.op_funcs:
-            return self.op_funcs[self.operator](attr_value, self.value)
+        # print(attr_value, self.attribute, self.value)
+        if self.operator is not None:
+            if self.operator in self.op_funcs:
+                return self.op_funcs[self.operator](attr_value, self.value)
+            else:
+                raise ValueError(f"Invalid operator {self.operator}")
+        elif self.contains_regex(self.value):
+            return re.match(self.value, attr_value)
         else:
-            raise ValueError(f"Invalid operator {self.operator}")
+            return attr_value == self.value
+    
+    def contains_regex(self, s):
+        """
+        Checks whether a string contains a regular expression.
+
+        Args:
+            s (str): The string to check.
+
+        Returns:
+            True if the string contains a regular expression, False otherwise.
+        """
+        try:
+            re.compile(s)
+        except (re.error, TypeError):
+            return False
+        return True
 
     @staticmethod
     def raise_type_error(op: str, x: Any, y: Any) -> None:
@@ -128,12 +150,13 @@ class OrmCollection(ImprovedList):
         Filters the collection to only include objects that match the provided criteria.
 
         Args:
+            *args (Query): Query objects that are combined using the OR operator.
             **kwargs (dict): Key-value pairs of field names and values to filter by.
                 Valid operators include "lt", "gt", "lte", "gte", "endswith", "startswith", "in", "nin", "contains".
                 If an invalid operator is used, a ValueError is raised.
 
         Returns:
-            OrmCollection: A new OrmCollection containing only objects where all given attributes match.
+            OrmCollection: A new OrmCollection containing only objects where at least one of the given attributes matches.
 
         Raises:
             ValueError: If an invalid operator is used.
@@ -143,9 +166,6 @@ class OrmCollection(ImprovedList):
         filters = []
         for query in args:
             for filter_ in query.filters:
-                print(filter_)
-                if "__" in filter_.attribute:
-                    raise ValueError("Invalid condition, cannot mixte filters")
                 filters.append(filter_)
 
         for key, value in kwargs.items():
@@ -161,16 +181,7 @@ class OrmCollection(ImprovedList):
         for elm in self:
             matches = True
             for filter_ in filters:
-                attr_value = getattr(elm, filter_.attribute)
-                # matches = matches and filter_.evaluate(elm)
-                if filter_.operator is not None:
-                    matches = matches and filter_.evaluate(elm)
-                elif self.contains_regex(filter_.value):
-                    print(filter_.attribute, matches)
-                    matches = matches and re.match(filter_.value, attr_value)
-                else:
-                    # print("_____________", filter_.__dict__, attr_value, matches and attr_value == filter_.value)
-                    matches = matches and attr_value == filter_.value
+                matches = matches and filter_.evaluate(elm)
                 if not matches:
                     break
             if matches:

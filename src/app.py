@@ -111,7 +111,7 @@ def main3():
 
     # print(query_3.__dict__)
     # print(query_4.__dict__)
-    results = my_orm_collection.where(query_3)
+    results = my_orm_collection.where(name= "^A.*")
     print(results)
     # results2 = my_orm_collection.where(
     #     Q(("age", "lte", 30)) | Q(("name", "startswith", "A"))
