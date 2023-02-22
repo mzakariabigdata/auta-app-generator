@@ -33,10 +33,10 @@ env-activate:
 requirements-lock:
 	pipenv lock
 # Génère un fichier requirements-prod.txt contenant une liste des dépendances de production et de leur hachage à partir du fichier Pipfile.lock.
-requirements-prod: requirements-lock Pipfile 
+requirements-prod: requirements-lock Pipfile
 	pipenv requirements --hash > requirements-prod.txt
 #  Génère un fichier requirements-dev.txt contenant une liste des dépendances de développement et de leur hachage à partir du fichier Pipfile.lock.
-requirements-dev: env-init requirements-lock Pipfile 
+requirements-dev: env-init requirements-lock Pipfile
 	pipenv requirements --hash --dev > requirements-dev.txt
 #  Installe les dépendances de production en utilisant le fichier requirements-prod.txt.
 install-requirements-prod: requirements-prod
@@ -69,7 +69,7 @@ cov:
 	python -m pytest -s -vvv --cov-report term-missing:skip-covered --cov-report=html:reports/ --cov=src/lib tests/
 # Exécute les tests unitaires et génère un rapport de couverture de code au format XML dans le dossier reports/.
 cov-xml:
-	python -m pytest -s -vvv --cov-report term-missing:skip-covered --cov-report=xml:reports/coverage.xml --cov=src/lib tests/
+	python -m pytest  -rX -vvv --cov-report term-missing:skip-covered --cov-report=xml:reports/coverage.xml --cov=src/lib tests/
 # Nettoie les fichiers générés précédemment en utilisant l'outil pyclean.
 clean-py:
 	pyclean . -q
@@ -89,7 +89,7 @@ DOCSDIR			= docs
 .PHONY: docs-init docs clean-docs
 
 
-docs-init: 
+docs-init:
 	$(call create-dir, $(DOCSDIR)) && cd docs && $(SPHINXINIT) && sphinx-apidoc -o docs src/
 
 docs: clean-docs

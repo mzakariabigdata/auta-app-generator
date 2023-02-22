@@ -22,92 +22,196 @@ def my_orm_collection():
     )
 
 
-@pytest.mark.parametrize(
-    "query, expected_names",
-    [
-        ({"age": 25}, {"Alice"}),  # Test finding all elements with age equal to 25
-        (
-            {"gender": "male", "age": 30},
-            {"Charlie", "Dave"},
-        ),  # Test finding all elements with gender equal to male and age equal to 30
-        (
-            Query([Filter("age", None, 30)]),
-            {"Charlie", "Dave"},
-        ),  # Test finding all elements with gender equal to male and age equal to 30 with Query
-        (
-            {"name": ".*a.*"},
-            {"Charlie", "Dave"},
-        ),  # Test finding all elements with name containing the letter "a"
-        (
-            {"age__gt": 25, "name__contains": "v"},
-            {"Dave"},
-        ),  # Test all objects where age is greater than 25 and name contains "v" (test two conditions)
-        (
-            {"age__gt": "25"},
-            TypeError,
-        ),  # Test TypeError
-        (
-            {"name": re.compile(r".*z.*", re.IGNORECASE)},
-            set(),
-        ),  # Test finding all elements with name containing the letter "z"
-        (
-            {"name": ".*a.*|.*e.*"},
-            {"Alice", "Charlie", "Dave"},
-        ),  # Test finding all elements with name containing the letter "a" or "e"
-        (
-            {"name": re.compile(r".*ie$", re.IGNORECASE)},
-            {"Charlie"},
-        ),  # Test finding all elements with name ending with "ie"
-        (
-            {"name": ""},
-            {"Alice", "Bob", "Charlie", "Dave"},
-        ),  # Test finding all elements with an empty name (should return all elements)
-        (
-            {},
-            {"Alice", "Bob", "Charlie", "Dave"},
-        ),  # Test finding all elements with no params (should return all elements)
-        (
-            {},
-            re.error,
-        ),  # Test if an invalid regular expression is used.
-        (
-            {"age": 100},
-            set(),
-        ),  # Test finding all elements with age equal to 100 (should return an empty set)
-        (
-            {"name": "^A.*"},
-            {"Alice"},
-        ),  # Test finding all elements with name starting with "A"
-        (
-            {"name": ".*e$"},
-            {"Alice", "Charlie", "Dave"},
-        ),  # Test finding all elements with name ending with "e"
-        (
-            {"name": "^A.*|.*e$"},
-            {"Alice", "Dave", "Charlie"},
-        ),  # Test finding all elements with name starting with "A" or ending with "e"
-        (
-            Query([Filter("age", "test_not_op", 30)]),
-            ValueError,
-        ),  # Test not valid operator,
-    ],
-)
-def test_where(my_orm_collection, query, expected_names):
-    # Test finding elements with a regular expression that raises a re.error
-    if expected_names == re.error:
-        with pytest.raises(re.error):
-            my_orm_collection.where(name=re.compile("["))
-    elif expected_names == TypeError:
-        with pytest.raises(TypeError):
-            my_orm_collection.where(**query)
-    elif expected_names == ValueError:
-        with pytest.raises(ValueError):
-            my_orm_collection.where(query)
-    elif isinstance(query, Query):
+@pytest.fixture
+def my_orm_collection_group():
+    return OrmCollection(
+        [
+            ObjDict({"name": "Alice", "age": 25, "gender": "female", "taf": "psy"}),
+            ObjDict({"name": "Alice", "age": 80, "gender": "male", "taf": "retraite"}),
+            ObjDict({"name": "Bob", "age": 40, "gender": "male", "taf": "cia"}),
+            ObjDict({"name": "Charlie", "age": 30, "gender": "male", "taf": "etud"}),
+            ObjDict({"name": "Charlie", "age": 30, "gender": "male", "taf": "prof"}),
+            ObjDict({"name": "Dave", "age": 30, "gender": "male", "taf": "ing"}),
+            ObjDict({"name": "Dave", "age": 31, "gender": "male", "taf": "chomor"}),
+        ]
+    )
+
+
+def describe_where():
+    # Paramétrisation des tests
+    @pytest.mark.parametrize(
+        "query, expected_names",
+        [
+            (
+                Query([Filter("age", None, 30)]),
+                {"Charlie", "Dave"},
+            ),  # Test finding all elements with gender equal to male and age equal to 30 with Query
+            (
+                Query([Filter("age", None, 30)]) & Query([Filter("age", None, 30)]),
+                {"Dave", "Charlie"},
+            ),
+            (
+                Query([Filter("age", None, 30)])
+                & Query([Filter("name", "startswith", "D")]),
+                {"Dave"},
+            ),
+            (
+                Query([Filter("age", None, 30)]) | Query([Filter("age", None, 40)]),
+                {"Dave", "Bob", "Charlie"},
+            ),
+        ],
+        # Ajout d'un label pour identifier clairement la paramétrisation dans les rapports de tests
+        ids=["age=30", "age=30&age=30", "age=30&name=D*", "age=30|age=40"],
+    )
+    # Test pour vérifier que where() renvoie les résultats attendus
+    def test_where_query_with_expected_results(
+        my_orm_collection, query, expected_names
+    ):
+        # Appel à la méthode where() de l'ORM avec le query spécifié
         results = my_orm_collection.where(query)
+        # Vérification de la longueur des résultats renvoyés
         assert len(results) == len(expected_names)
-        assert set([result["name"] for result in results]) == expected_names
-    else:
+        # Vérification que les noms des résultats renvoyés sont bien ceux attendus
+        result_names = set(result["name"] for result in results)
+        assert result_names == expected_names
+
+    @pytest.mark.parametrize(
+        "query, expected_result",
+        [
+            pytest.param({"age__gt": "25"}, TypeError, id="type_error_age_gt_25"),
+            pytest.param({"age__lt": "25"}, TypeError, id="type_error_age_lt_25"),
+            pytest.param({"age__not": "25"}, TypeError, id="type_error_age_not_25"),
+            pytest.param({"age__lte": "25"}, TypeError, id="type_error_age_lte_25"),
+            pytest.param({"age__gte": "25"}, TypeError, id="type_error_age_gte_25"),
+            pytest.param({"age__in": 25}, TypeError, id="type_error_age_in_25"),
+            pytest.param(
+                {"age__nin": 25}, TypeError, id="type_error_age_nin_25"
+            ),  # Test TypeError
+            pytest.param(
+                {"age__contains": 25}, TypeError, id="type_error_age_contains_25"
+            ),  # Test TypeError
+            pytest.param(
+                {"age__endswith": 25}, TypeError, id="type_error_age_endswith_25"
+            ),  # Test TypeError
+            pytest.param(
+                {"age__startswith": 25}, TypeError, id="type_error_age_startswith_25"
+            ),  # Test TypeError
+            pytest.param(
+                Query([Filter("age", "test_not_op", 30)]),
+                ValueError,
+                id="value_error_invalid_operator",
+            ),  # Test not valid operator,
+            pytest.param(
+                {"name__notValid": "i"}, ValueError, id="value_error_invalid_parameter"
+            ),  # Test not valid operator
+        ],
+    )
+    def test_where_with_errors(my_orm_collection, query, expected_result):
+        if expected_result == TypeError:
+            with pytest.raises(TypeError):
+                my_orm_collection.where(**query)
+        elif expected_result == ValueError and isinstance(query, Query):
+            with pytest.raises(expected_result):
+                my_orm_collection.where(query)
+        elif expected_result == ValueError:
+            with pytest.raises(ValueError):
+                my_orm_collection.where(**query)
+
+    # Définition des paramètres d'entrée et des résultats attendus pour chaque test
+    @pytest.mark.parametrize(
+        "query, expected_names",
+        [
+            # Test pour trouver tous les éléments avec l'âge égal à 25
+            pytest.param({"age": 25}, {"Alice"}, id="age=25"),
+            # Test pour trouver tous les éléments avec le genre masculin et l'âge égal à 30
+            pytest.param(
+                {"gender": "male", "age": 30},
+                {"Charlie", "Dave"},
+                id="gender=male&age=30",
+            ),
+            # Test pour trouver tous les éléments avec le nom contenant la lettre "a"
+            pytest.param({"name": ".*a.*"}, {"Charlie", "Dave"}, id="name_contains_a"),
+            # Test pour trouver tous les éléments où l'âge est supérieur à 25 et le nom contient "v"
+            pytest.param(
+                {"age__gt": 25, "name__contains": "v"},
+                {"Dave"},
+                id="age>25&name_contains_v",
+            ),
+            pytest.param(
+                {"age__in": [25, 30], "name__contains": "v"},
+                {"Dave"},
+                id="agein25,30&name_contains_v",
+            ),
+            pytest.param(
+                {"age__lt": 40, "name__contains": "v"},
+                {"Dave"},
+                id="age=40&name_contains_v",
+            ),
+            pytest.param(
+                {"age__not": 40, "name__contains": "v"},
+                {"Dave"},
+                id="age!=40&name_contains_v",
+            ),
+            pytest.param(
+                {"age__lte": 30, "name__contains": "v"},
+                {"Dave"},
+                id="age<=30&name_contains_v",
+            ),
+            pytest.param(
+                {"age__gte": 30, "name__contains": "v"},
+                {"Dave"},
+                id="age>=30&name_contains_v",
+            ),
+            pytest.param(
+                {"age__nin": [25], "name__contains": "v"},
+                {"Dave"},
+                id="age!=25,&name_contains_v",
+            ),
+            pytest.param(
+                {"age__nin": [25], "name__endswith": "e"},
+                {"Dave", "Charlie"},
+                id="age=40&name__endswith_v",
+            ),
+            # Test pour trouver tous les éléments avec le nom contenant la lettre "z"
+            pytest.param(
+                {"name": re.compile(r".*z.*", re.IGNORECASE)},
+                set(),
+                id="name_contains_z",
+            ),
+            # Test pour trouver tous les éléments avec le nom contenant la lettre "a" ou "e"
+            pytest.param(
+                {"name": ".*a.*|.*e.*"},
+                {"Alice", "Charlie", "Dave"},
+                id="name_contains_a_or_e",
+            ),
+            # Test pour trouver tous les éléments avec le nom se terminant par "ie"
+            pytest.param(
+                {"name": re.compile(r".*ie$", re.IGNORECASE)},
+                {"Charlie"},
+                id="name_ends_with_ie",
+            ),
+            # Test pour trouver tous les éléments avec un nom vide (devrait renvoyer tous les éléments)
+            pytest.param(
+                {"name": ""}, {"Alice", "Bob", "Charlie", "Dave"}, id="name_empty"
+            ),
+            # Test  sans paramètres (devrait renvoyer 0 éléments)
+            pytest.param({}, set(), id="no_params"),
+            # Test pour trouver tous les éléments avec l'âge égal à 100 (devrait renvoyer un ensemble vide)
+            pytest.param({"age": 100}, set(), id="age=100"),
+            # Test pour trouver tous les éléments avec le nom commençant par "A"
+            pytest.param({"name": "^A.*"}, {"Alice"}, id="name_starts_with_A"),
+            # Test pour trouver tous les éléments avec le nom se terminant par "e"
+            pytest.param(
+                {"name": ".*e$"}, {"Alice", "Charlie", "Dave"}, id="name_ends_with_e"
+            ),
+            pytest.param(
+                {"name": "^A.*|.*e$"},
+                {"Alice", "Dave", "Charlie"},
+                id="name_ends_with_e&name_starts_with_A",
+            ),  # Test finding all elements with name starting with "A" or ending with "e"
+        ],
+    )
+    def test_orm_collection_where(my_orm_collection, query, expected_names):
         # Test finding elements with the given query
         results = my_orm_collection.where(**query)
         assert len(results) == len(expected_names)
@@ -118,258 +222,291 @@ def test_where(my_orm_collection, query, expected_names):
         assert my_orm_collection != results
 
 
-@pytest.mark.parametrize(
-    "query, expected_names",
-    [
-        (
-            Query([Filter("age", None, 30)]) & Query([Filter("age", None, 30)]),
-            {"Dave", "Charlie"},
-        ),
-        (
-            Query([Filter("age", None, 30)])
-            & Query([Filter("name", "startswith", "D")]),
-            {"Dave"},
-        ),
-        (
-            Query([Filter("age", None, 30)]) | Query([Filter("age", None, 40)]),
-            {"Dave", "Bob", "Charlie"},
-        ),
-    ],
-)
-def test_where_query(my_orm_collection, query, expected_names):
-    results = my_orm_collection.where(query)
-    assert len(results) == len(expected_names)
-    assert set([result["name"] for result in results]) == expected_names
-
-
-@pytest.mark.parametrize(
-    "query, expected_result",
-    [
-        (
-            {"name": "Bob"},
-            {"name": "Bob", "age": 40, "gender": "male"},
-        ),  # Test finding the element with name equal to "Bob"
-        (
-            {"name": "Alice", "age": 25},
-            {"age": 25, "gender": "female", "name": "Alice"},
-        ),  # Test finding the element with name equal to "Alice" and age equal to 25
-        (
-            {"name": ".*a.*"},
-            BaseMultipleFound,
-        ),  # Test finding the element with name equal to "Charlie" (not unique)
-        (
-            {"name": "Eve"},
-            BaseNotFound,
-        ),  # Test finding the element with name equal to "Eve" (not found)
-        (
-            {"age": 20},
-            BaseNotFound,
-        ),  # Test finding the element with age equal to 20 (not found)
-        (
-            {"email": "alice@example.com"},
-            KeyError,
-        ),  # Test calling the function with a key that doesn't exist in the collection
-        (
-            {"age__lt": 30},
-            {"age": 25, "gender": "female", "name": "Alice"},
-        ),  # Test finding the element with age less than 30
-        (
-            {"gender__in": ["female", "nonbinary"]},
-            {"age": 25, "gender": "female", "name": "Alice"},
-        ),  # Test finding the element with gender in ["female", "nonbinary"]
-        (
-            {"name__startswith": "C"},
-            {"name": "Charlie", "age": 30, "gender": "male"},
-        ),  # Test finding the element with name starting with "C"
-        (
-            {"gender__not": "male"},
-            {"age": 25, "gender": "female", "name": "Alice"},
-        ),  # Test finding the element with gender not equal to "male"
-        (
-            {"name__endswith": "b"},
-            {"name": "Bob", "age": 40, "gender": "male"},
-        ),  # Test finding all elements with name ending with "e"
-        (
-            {"age__lte": 25},
-            {"name": "Alice", "age": 25, "gender": "female"},
-        ),  # Test finding all elements with age less than or equal to 30
-        (
-            {"age__gte": 40},
-            {"name": "Bob", "age": 40, "gender": "male"},
-        ),  # Test finding all elements with age less than or equal to 30
-        (
-            {"age__gt": 39},
-            {"name": "Bob", "age": 40, "gender": "male"},
-        ),  # Test finding all elements with age less than or equal to 30
-        (
-            {"age__nin": [25, 30]},
-            {"name": "Bob", "age": 40, "gender": "male"},
-        ),  # Test finding all elements with age not equal to 25 or 30
-        (
-            {"name__contains": "v"},
-            {"name": "Dave", "age": 30, "gender": "male"},
-        ),  # Test finding all elements with name containing the letter "v"
-        (
-            {"name__contains": "i"},
-            BaseMultipleFound,
-        ),  # Test finding all elements with name containing the letter "i"
-        ({"name__notValid": "i"}, ValueError),  # Test not valid operator
-    ],
-)
-def test_find_by(my_orm_collection, query, expected_result):
-    if expected_result == BaseMultipleFound:
-        with pytest.raises(BaseMultipleFound):
-            my_orm_collection.find_by(**query)
-    elif expected_result == BaseNotFound:
-        with pytest.raises(BaseNotFound):
-            my_orm_collection.find_by(**query)
-    elif expected_result == KeyError:
-        with pytest.raises(KeyError):
-            my_orm_collection.find_by(**query)
-    elif expected_result == ValueError:
-        with pytest.raises(ValueError):
-            my_orm_collection.find_by(**query)
-    else:
-        result = my_orm_collection.find_by(**query)
-        assert result == expected_result
-
-
-def test_orm_collection_group_by():
-    # TODO : group by name
-    # Test group_by() function with a simple list of integers
-    lst = OrmCollection([1, 2, 3, 4])
-    grouped_lst = lst.group_by(lambda x: x % 2 == 0)
-    assert grouped_lst == {True: [2, 4], False: [1, 3]}
-
-    # Test group_by() function with a list of strings
-    lst = OrmCollection(["apple", "banana", "orange", "pear", "bouger"])
-    grouped_lst = lst.group_by(lambda x: x[0])
-    assert grouped_lst == {
-        "a": ["apple"],
-        "b": ["banana", "bouger"],
-        "o": ["orange"],
-        "p": ["pear"],
-    }
-
-
-def test_order_by_with_string_key(my_orm_collection):
-    ordered_lst = my_orm_collection.order_by("age")
-    expected_lst = [
-        {"name": "Alice", "age": 25, "gender": "female"},
-        {"name": "Charlie", "age": 30, "gender": "male"},
-        {"name": "Dave", "age": 30, "gender": "male"},
-        {"name": "Bob", "age": 40, "gender": "male"},
-    ]
-    assert ordered_lst == expected_lst
-
-
-def test_order_by_with_callable_key(my_orm_collection):
-    ordered_lst = my_orm_collection.order_by(lambda x: x["name"])
-    expected_lst = [
-        {"name": "Alice", "age": 25, "gender": "female"},
-        {"name": "Bob", "age": 40, "gender": "male"},
-        {"name": "Charlie", "age": 30, "gender": "male"},
-        {"name": "Dave", "age": 30, "gender": "male"},
-    ]
-    assert ordered_lst == expected_lst
-
-
-def test_order_by_with_invalid_key_type(my_orm_collection):
-    with pytest.raises(TypeError):
-        my_orm_collection.order_by(123)
-
-
-def test_orm_collection_order_by():
-    # Test order_by() function with a simple list of integers
-    lst = OrmCollection([4, 2, 1, 3])
-    ordered_lst = lst.order_by()
-    assert ordered_lst == [1, 2, 3, 4]
-
-    lst = OrmCollection([4, 2, 1, "3"])
-    with pytest.raises(ValueError):
-        lst.order_by()
-
-    # Test order_by() function with a list of strings
-    lst = OrmCollection(["apple", "banana", "orange", "f", "pear", "c'est encore moi"])
-    ordered_lst = lst.order_by(lambda x: len(x))
-    assert ordered_lst == ["f", "pear", "apple", "banana", "orange", "c'est encore moi"]
-
-
-def test_orm_collection_all(my_orm_collection):
-    lst = my_orm_collection.all()
-
-    assert len(lst) == 4
-    assert all(x.name and x.age and x.gender for x in lst)
-
-
-def test_orm_collection_offset(my_orm_collection):
-    result = my_orm_collection.offset(2)
-
-    assert len(result) == 2
-    assert result[0].name == "Charlie"
-    assert result[1].name == "Dave"
-
-
-def test_orm_collection_limit(my_orm_collection):
-    result = my_orm_collection.limit(2)
-
-    assert len(result) == 2
-    assert result[0].name == "Alice"
-    assert result[1].name == "Bob"
-
-
-def test_orm_collection_distinct():
-    # Test distinct() function with non-duplicate values
-    lst = OrmCollection([1, 2, 3, 4])
-    distinct_lst = lst.distinct()
-    assert distinct_lst == [1, 2, 3, 4]
-
-    lst = OrmCollection(["apple", "banana", "orange", "f", "pear", "orange"])
-    distinct_lst = lst.distinct()
-    assert len(distinct_lst) == 5
-    assert distinct_lst == ["apple", "banana", "orange", "f", "pear"]
-
-    # Test distinct() function with duplicate values
-    lst = OrmCollection([1, 2, 2, 3, 4, 4])
-    distinct_lst = lst.distinct()
-    assert distinct_lst == [1, 2, 3, 4]
-
-
-def test_distinct():
-    class Person:
-        def __init__(self, name, age):
-            self.name = name
-            self.age = age
-
-    persons = OrmCollection(
+def describe_find_by():
+    @pytest.mark.parametrize(
+        "query, expected_result",
         [
-            Person("John", 25),
-            Person("Jane", 30),
-            Person("Bob", 25),
-            Person("Alice", 35),
-            Person("John", 25),
-        ]
+            pytest.param(
+                {"name": ".*a.*"},
+                BaseMultipleFound,
+                id="find_multiple_elements_with_name_containing_a",
+            ),
+            pytest.param(
+                {"age": 20},
+                BaseNotFound,
+                id="find_element_with_age_equal_to_20",
+            ),
+            pytest.param(
+                {"name__contains": "v"},
+                {"name": "Dave", "age": 30, "gender": "male"},
+                id="find_element_with_name_containing_v",
+            ),
+        ],
     )
+    def test_find_by(my_orm_collection, query, expected_result):
+        if expected_result == BaseMultipleFound:
+            with pytest.raises(BaseMultipleFound):
+                my_orm_collection.find_by(**query)
+        elif expected_result == BaseNotFound:
+            with pytest.raises(BaseNotFound):
+                my_orm_collection.find_by(**query)
+        else:
+            result = my_orm_collection.find_by(**query)
+            assert result == expected_result
 
+
+def describe_group_by():
+    @pytest.mark.parametrize(
+        "group_func,expected_output",
+        [
+            pytest.param(
+                lambda x: x["name"],
+                {
+                    "Alice": [
+                        {"name": "Alice", "age": 25, "gender": "female", "taf": "psy"},
+                        {
+                            "name": "Alice",
+                            "age": 80,
+                            "gender": "male",
+                            "taf": "retraite",
+                        },
+                    ],
+                    "Bob": [{"name": "Bob", "age": 40, "gender": "male", "taf": "cia"}],
+                    "Charlie": [
+                        {"name": "Charlie", "age": 30, "gender": "male", "taf": "etud"},
+                        {"name": "Charlie", "age": 30, "gender": "male", "taf": "prof"},
+                    ],
+                    "Dave": [
+                        {"name": "Dave", "age": 30, "gender": "male", "taf": "ing"},
+                        {"name": "Dave", "age": 31, "gender": "male", "taf": "chomor"},
+                    ],
+                },
+                id="group_by_name",
+            ),
+            pytest.param(
+                lambda x: x["gender"],
+                {
+                    "female": [
+                        {"name": "Alice", "age": 25, "gender": "female", "taf": "psy"}
+                    ],
+                    "male": [
+                        {
+                            "name": "Alice",
+                            "age": 80,
+                            "gender": "male",
+                            "taf": "retraite",
+                        },
+                        {"name": "Bob", "age": 40, "gender": "male", "taf": "cia"},
+                        {"name": "Charlie", "age": 30, "gender": "male", "taf": "etud"},
+                        {"name": "Charlie", "age": 30, "gender": "male", "taf": "prof"},
+                        {"name": "Dave", "age": 30, "gender": "male", "taf": "ing"},
+                        {"name": "Dave", "age": 31, "gender": "male", "taf": "chomor"},
+                    ],
+                },
+                id="group_by_gender",
+            ),
+        ],
+    )
+    def test_orm_collection_group_by(
+        my_orm_collection_group, group_func, expected_output
+    ):
+        """
+        GIVEN a list of objects and a grouping function
+        WHEN group_by() is called
+        THEN the objects should be grouped according to the function
+        """
+
+        results = my_orm_collection_group.group_by(group_func)
+        assert len(results) == len(expected_output)
+        assert results == expected_output
+
+    @pytest.mark.parametrize(
+        "data, group_func, expected_output",
+        [
+            pytest.param(
+                [1, 2, 3, 4],
+                lambda x: x % 2 == 0,
+                {True: [2, 4], False: [1, 3]},
+                id="numbers",
+            ),
+            pytest.param(
+                ["apple", "banana", "orange", "pear", "bouger"],
+                lambda x: x[0],
+                {
+                    "a": ["apple"],
+                    "b": ["banana", "bouger"],
+                    "o": ["orange"],
+                    "p": ["pear"],
+                },
+                id="fruits",
+            ),
+        ],
+    )
+    def test_simple_orm_collection_group_by(data, group_func, expected_output):
+        lst_orm = OrmCollection(data)
+        results = lst_orm.group_by(group_func)
+        assert len(results) == len(expected_output)
+        assert results == expected_output
+
+
+def describe_order_by():
+    @pytest.mark.parametrize(
+        "order_by_key, expected_output",
+        [
+            pytest.param(
+                "age",
+                [
+                    {"name": "Alice", "age": 25, "gender": "female"},
+                    {"name": "Charlie", "age": 30, "gender": "male"},
+                    {"name": "Dave", "age": 30, "gender": "male"},
+                    {"name": "Bob", "age": 40, "gender": "male"},
+                ],
+                id="order_by_age",
+            ),
+            pytest.param(
+                lambda x: x["name"],
+                [
+                    {"name": "Alice", "age": 25, "gender": "female"},
+                    {"name": "Bob", "age": 40, "gender": "male"},
+                    {"name": "Charlie", "age": 30, "gender": "male"},
+                    {"name": "Dave", "age": 30, "gender": "male"},
+                ],
+                id="order_by_name",
+            ),
+        ],
+    )
+    def test_order_by(my_orm_collection, order_by_key, expected_output):
+        ordered_lst = my_orm_collection.order_by(order_by_key)
+        assert ordered_lst == expected_output
+
+    def test_order_by_with_invalid_key_type(my_orm_collection):
+        with pytest.raises(TypeError):
+            my_orm_collection.order_by(123)
+
+        lst = OrmCollection([4, 2, 1, "3"])
+        with pytest.raises(ValueError):
+            lst.order_by()
+
+    @pytest.mark.parametrize(
+        "data, expected_output",
+        [
+            pytest.param([4, 2, 1, 3], [1, 2, 3, 4], id="simple_list_of_integers"),
+            pytest.param(
+                ["apple", "banana", "orange", "f", "pear", "c'est encore moi"],
+                ["f", "pear", "apple", "banana", "orange", "c'est encore moi"],
+                id="list_of_strings",
+            ),
+        ],
+    )
+    def test_simple_order_by(data, expected_output):
+        lst = OrmCollection(data)
+        ordered_lst = lst.order_by()
+        assert ordered_lst == expected_output
+
+    @pytest.mark.parametrize(
+        "data, key_func, expected_output",
+        [
+            ([4, 2, 1, 3], lambda x: -x, [4, 3, 2, 1]),
+            (
+                ["apple", "banana", "orange", "f", "pear", "c'est encore moi"],
+                lambda x: len(x),
+                ["f", "pear", "apple", "banana", "orange", "c'est encore moi"],
+            ),
+        ],
+        ids=["order_by_reversed", "order_by_len"],
+    )
+    def test_order_by_with_key_func(data, key_func, expected_output):
+        lst = OrmCollection(data)
+        ordered_lst = lst.order_by(key_func)
+        assert ordered_lst == expected_output
+
+
+@pytest.mark.parametrize(
+    "method, args, expected_output",
+    [
+        (
+            "all",
+            [],
+            [
+                {"name": "Alice", "age": 25, "gender": "female"},
+                {"name": "Bob", "age": 40, "gender": "male"},
+                {"name": "Charlie", "age": 30, "gender": "male"},
+                {"name": "Dave", "age": 30, "gender": "male"},
+            ],
+        ),
+        (
+            "offset",
+            [2],
+            [
+                {"name": "Charlie", "age": 30, "gender": "male"},
+                {"name": "Dave", "age": 30, "gender": "male"},
+            ],
+        ),
+        (
+            "limit",
+            [2],
+            [
+                {"name": "Alice", "age": 25, "gender": "female"},
+                {"name": "Bob", "age": 40, "gender": "male"},
+            ],
+        ),
+    ],
+)
+def test_orm_collection_methods(my_orm_collection, method, args, expected_output):
+    # TODO: implement obj.to_dict()
+    result = getattr(my_orm_collection, method)(*args)
+    assert len(result) == len(expected_output)
+    # for idx, obj in enumerate(result):
+    #     assert obj.to_dict() == expected_output[idx]
+
+
+@pytest.mark.parametrize(
+    "data, expected_output",
+    [
+        ([1, 2, 3, 4], [1, 2, 3, 4]),
+        ([1, 2, 2, 3, 4, 4], [1, 2, 3, 4]),
+        (
+            ["apple", "banana", "orange", "f", "pear", "orange"],
+            ["apple", "banana", "orange", "f", "pear"],
+        ),
+    ],
+)
+def test_orm_collection_distinct(data, expected_output):
+    lst = OrmCollection(data)
+    distinct_lst = lst.distinct()
+    assert distinct_lst == expected_output
+
+
+def test_distinct(my_orm_collection_group):
     # Test with one field
-    distinct_persons = persons.distinct("name")
-    assert len(distinct_persons) == 4
+    distinct_coll = my_orm_collection_group.distinct("name")
+    assert len(distinct_coll) == 4
+    assert distinct_coll == [
+        {"name": "Alice", "age": 25, "gender": "female", "taf": "psy"},
+        {"name": "Bob", "age": 40, "gender": "male", "taf": "cia"},
+        {"name": "Charlie", "age": 30, "gender": "male", "taf": "etud"},
+        {"name": "Dave", "age": 30, "gender": "male", "taf": "ing"},
+    ]
     assert all(
-        person.name in {"John", "Jane", "Bob", "Alice"} for person in distinct_persons
+        person.name in {"Alice", "Dave", "Bob", "Charlie"} for person in distinct_coll
     )
 
     # Test with two fields
-    distinct_persons = persons.distinct("name", "age")
-    assert len(distinct_persons) == 4
+    distinct_coll = my_orm_collection_group.distinct("name", "age")
+    assert len(distinct_coll) == 6
     assert all(
         (person.name, person.age)
-        in {("John", 25), ("Jane", 30), ("Bob", 25), ("Alice", 35)}
-        for person in distinct_persons
+        in {
+            ("Alice", 25),         ("Alice", 80),
+            ("Dave", 30),("Dave", 31),
+            ("Bob", 40),("Charlie", 30),
+        }
+        for person in distinct_coll
     )
 
     # Test with missing argument
     try:
-        persons.distinct()
+        my_orm_collection_group.distinct()
     except ValueError:
         pass
     else:
@@ -377,8 +514,8 @@ def test_distinct():
 
     # Test with non-existent field
     try:
-        persons.distinct("non_existent_field")
-    except AttributeError:
+        my_orm_collection_group.distinct("non_existent_field")
+    except KeyError:
         pass
     else:
         assert False, "Expected AttributeError"

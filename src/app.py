@@ -66,39 +66,10 @@ def main2():
 
 
 def main3():
-    my_orm_collection = OrmCollection(
-        [
-            ObjDict({"name": "Alice", "age": 25, "gender": "female"}),
-            ObjDict({"name": "Bob", "age": 40, "gender": "male"}),
-            ObjDict({"name": "Charlie", "age": 30, "gender": "male"}),
-            ObjDict({"name": "Dave", "age": 30, "gender": "male"}),
-        ]
-    )
-
-    query_1 = Query(
-        [
-            Filter("age", None, 30),
-        ]
-    )
-    query_2 = Query(
-        [
-            Filter("age", None, 40),
-        ]
-    )
-    query_10 = Query(
-        [
-            Filter("name", "startswith", "A"),
-        ]
-    )
-
-    query_3 = query_1 & query_2
-    query_4 = (query_1 | query_2)
-    results = my_orm_collection.where(query_4 | query_10)
-    print(results)
-    # results2 = my_orm_collection.where(
-    #     Q(("age", "lte", 30)) | Q(("name", "startswith", "A"))
-    # )
-    # print(results2)
+    data = ["apple", "banana", "orange", "f", "pear", "c'est encore moi"]
+    lst = OrmCollection(data)
+    ordered_lst = lst.order_by()
+    print(ordered_lst)
 
 
 if __name__ == "__main__":

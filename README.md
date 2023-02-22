@@ -32,4 +32,4 @@ Optimisation des performances : Si votre ORM est utilisé dans une application e
 
 Fonctionnalités avancées : Si vous voulez que votre ORM soit vraiment professionnel, vous pouvez ajouter des fonctionnalités avancées telles que la prise en charge de différentes bases de données, la gestion de la migration des données, l'optimisation des requêtes, etc.
 
-Support : Fournir un support pour votre ORM peut aider les utilisateurs à résoudre les problèmes et à l'utiliser de manière optimale. Vous pouvez fournir un support par e-mail, sur des forums en ligne ou via des chatbots. 
+Support : Fournir un support pour votre ORM peut aider les utilisateurs à résoudre les problèmes et à l'utiliser de manière optimale. Vous pouvez fournir un support par e-mail, sur des forums en ligne ou via des chatbots.

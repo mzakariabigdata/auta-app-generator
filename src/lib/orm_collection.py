@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, List, Union, Dict
 from src.lib.improved_list import ImprovedList
 from src.lib.exception import BaseMultipleFound, BaseNotFound
 from collections import OrderedDict
@@ -7,44 +7,94 @@ from collections import OrderedDict
 
 class Filter:
     op_funcs = {
-        "lt": lambda x, y: x < y
-        if type(x) == type(y)
-        else Filter.raise_type_error("<", x, y),
-        "gt": lambda x, y: x > y
-        if type(x) == type(y)
-        else Filter.raise_type_error(">", x, y),
-        "endswith": lambda x, y: x.endswith(y)
-        if isinstance(x, str) and isinstance(y, str)
-        else Filter.raise_type_error("endswith", x, y),
-        "startswith": lambda x, y: x.startswith(y)
-        if isinstance(x, str) and isinstance(y, str)
-        else Filter.raise_type_error("startswith", x, y),
-        "in": lambda x, y: x in y
-        if type(y) in (list, set)
-        else Filter.raise_type_error("in", x, y),
-        "contains": lambda x, y: y in x
-        if isinstance(x, str) and isinstance(y, str)
-        else Filter.raise_type_error("contains", x, y),
-        "nin": lambda x, y: x not in y
-        if type(y) in (list, set)
-        else Filter.raise_type_error("nin", x, y),
-        "not": lambda x, y: x != y
-        if type(x) == type(y)
-        else Filter.raise_type_error("!=", x, y),
-        "lte": lambda x, y: x <= y
-        if type(x) == type(y)
-        else Filter.raise_type_error("<=", x, y),
-        "gte": lambda x, y: x >= y
-        if type(x) == type(y)
-        else Filter.raise_type_error(">=", x, y),
+        "lt": lambda x, y: Filter.less_than(x, y),
+        "gt": lambda x, y: Filter.greater_than(x, y),
+        "endswith": lambda x, y: Filter.ends_with(x, y),
+        "startswith": lambda x, y: Filter.starts_with(x, y),
+        "in": lambda x, y: Filter.in_list(x, y),
+        "contains": lambda x, y: Filter.contains_string(x, y),
+        "nin": lambda x, y: Filter.not_in_list(x, y),
+        "not": lambda x, y: Filter.not_equal_to(x, y),
+        "lte": lambda x, y: Filter.less_than_or_equal_to(x, y),
+        "gte": lambda x, y: Filter.greater_than_or_equal_to(x, y),
     }
 
-    def __init__(self, attribute, operator, value):
+    @staticmethod
+    def less_than(x: Any, y: Any) -> bool:
+        if type(x) == type(y):
+            return x < y
+        else:
+            Filter.raise_type_error("<", x, y)
+
+    @staticmethod
+    def greater_than(x: Any, y: Any) -> bool:
+        if type(x) == type(y):
+            return x > y
+        else:
+            Filter.raise_type_error(">", x, y)
+
+    @staticmethod
+    def ends_with(x: str, y: str) -> bool:
+        if isinstance(x, str) and isinstance(y, str):
+            return x.endswith(y)
+        else:
+            Filter.raise_type_error("endswith", x, y)
+
+    @staticmethod
+    def starts_with(x: str, y: str) -> bool:
+        if isinstance(x, str) and isinstance(y, str):
+            return x.startswith(y)
+        else:
+            Filter.raise_type_error("startswith", x, y)
+
+    @staticmethod
+    def in_list(x: Any, y: Any) -> bool:
+        if type(y) in (list, set):
+            return x in y
+        else:
+            Filter.raise_type_error("in", x, y)
+
+    @staticmethod
+    def contains_string(x: str, y: str) -> bool:
+        if isinstance(x, str) and isinstance(y, str):
+            return y in x
+        else:
+            Filter.raise_type_error("contains", x, y)
+
+    @staticmethod
+    def not_in_list(x: Any, y: Any) -> bool:
+        if type(y) in (list, set):
+            return x not in y
+        else:
+            Filter.raise_type_error("nin", x, y)
+
+    @staticmethod
+    def not_equal_to(x: Any, y: Any) -> bool:
+        if type(x) == type(y):
+            return x != y
+        else:
+            Filter.raise_type_error("!=", x, y)
+
+    @staticmethod
+    def less_than_or_equal_to(x: Any, y: Any) -> bool:
+        if type(x) == type(y):
+            return x <= y
+        else:
+            Filter.raise_type_error("<=", x, y)
+
+    @staticmethod
+    def greater_than_or_equal_to(x: Any, y: Any) -> bool:
+        if type(x) == type(y):
+            return x >= y
+        else:
+            Filter.raise_type_error(">=", x, y)
+
+    def __init__(self, attribute: str, operator: str, value: Any):
         self.attribute = attribute
         self.operator = operator
         self.value = value
 
-    def evaluate(self, obj):
+    def evaluate(self, obj: Dict[str, Any]) -> bool:
         attr_value = getattr(obj, self.attribute)
         # print(attr_value, self.attribute, self.value)
         if self.operator is not None:
@@ -93,49 +143,82 @@ class Filter:
 
 class Query:
     """
-    query1 = Query([
-    Filter("age", "gt", 25),
-    Filter("country", None, "France")
-        ])
+    Représente une requête qui peut être évaluée sur un objet.
 
-    query2 = Query([
-        Filter("name__startswith", None, "J"),
-        Filter("country", None, "Spain")
-    ])
+    Attributs:
+    ----------
+    filters : List[Union[Query, Filter]]
+        Liste de filtres à appliquer à l'objet.
 
-    # AND
-    query_and = query1 & query2
-    # équivaut à Query([
-    #    Filter("age", "gt", 25),
-    #    Filter("country", None, "France"),
-    #    Filter("name__startswith", None, "J"),
-    #    Filter("country", None, "Spain")
-    # ])
+    Méthodes:
+    ---------
+    __and__(self, other) -> Query:
+        Renvoie une nouvelle requête qui est la conjonction de cette requête et de la requête donnée.
 
-    # OR
-    query_or = query1 | query2
-    # équivaut à Query([
-    #    Query([
-    #        Filter("age", "gt", 25),
-    #        Filter("country", None, "France")
-    #    ]),
-    #    Query([
-    #        Filter("name__startswith", None, "J"),
-    #        Filter("country", None, "Spain")
-    #    ])
-    # ])
+    __or__(self, other) -> Query:
+        Renvoie une nouvelle requête qui est la disjonction de cette requête et de la requête donnée.
+
+    evaluate(self, obj) -> bool:
+        Évalue cette requête sur l'objet donné et renvoie True si l'objet satisfait la requête, False sinon.
     """
 
-    def __init__(self, filters):
+    def __init__(self, filters: List[Union["Query", "Filter"]]) -> None:
+        """
+        Initialise une nouvelle requête avec les filtres donnés.
+
+        Parameters:
+        -----------
+        filters : List[Union[Query, Filter]]
+            Liste de filtres à appliquer à l'objet.
+        """
         self.filters = filters
 
-    def __and__(self, other):
+    def __and__(self, other: "Query") -> "Query":
+        """
+        Renvoie une nouvelle requête qui est la conjonction de cette requête et de la requête donnée.
+
+        Parameters:
+        -----------
+        other : Query
+            La requête à conjointe avec celle-ci.
+
+        Returns:
+        --------
+        Query
+            Une nouvelle requête qui est la conjonction de cette requête et de la requête donnée.
+        """
         return Query(self.filters + other.filters)
 
-    def __or__(self, other):
+    def __or__(self, other: "Query") -> "Query":
+        """
+        Renvoie une nouvelle requête qui est la disjonction de cette requête et de la requête donnée.
+
+        Parameters:
+        -----------
+        other : Query
+            La requête à disjoindre avec celle-ci.
+
+        Returns:
+        --------
+        Query
+            Une nouvelle requête qui est la disjonction de cette requête et de la requête donnée.
+        """
         return Query([self, other])
 
-    def evaluate(self, obj):
+    def evaluate(self, obj: Dict[str, Any]) -> bool:
+        """
+        Évalue cette requête sur l'objet donné et renvoie True si l'objet satisfait la requête, False sinon.
+
+        Parameters:
+        -----------
+        obj : Any
+            L'objet à évaluer.
+
+        Returns:
+        --------
+        bool
+            True si l'objet satisfait la requête, False sinon.
+        """
         if isinstance(self.filters[0], Query):
             # opération OR
             return any(subquery.evaluate(obj) for subquery in self.filters)
@@ -150,13 +233,13 @@ class OrmCollection(ImprovedList):
     providing an interface and additional methods for querying and manipulating objects in the list.
     """
 
-    def where(self, *args, **kwargs) -> "OrmCollection":
+    def where(self, *queries, **filters) -> "OrmCollection":
         """
         Filters the collection to only include objects that match the provided criteria.
 
         Args:
-            *args (Query): Query objects that are combined using the OR operator.
-            **kwargs (dict): Key-value pairs of field names and values to filter by.
+            *queries (Query): Query objects that are combined using the OR operator.
+            **filters (dict): Key-value pairs of field names and values to filter by.
                 Valid operators include "lt", "gt", "lte", "gte", "endswith", "startswith", "in", "nin", "contains".
                 If an invalid operator is used, a ValueError is raised.
 
@@ -167,24 +250,29 @@ class OrmCollection(ImprovedList):
             ValueError: If an invalid operator is used.
         """
 
-        results = self.__class__()
-        filters = []
-        for query in args:
-            for filter_ in query.filters:
-                filters.append(filter_)
+        filters_list = []
 
-        for key, value in kwargs.items():
+        for query in queries:
+            for filter_ in query.filters:
+                filters_list.append(filter_)
+
+        for key, value in filters.items():
             if "__" in key:
                 attribute, operator = key.split("__")
                 if operator not in Filter.op_funcs:
                     raise ValueError(f"Invalid operator {operator}")
-                filters.append(Filter(attribute, operator, value))
+                filters_list.append(Filter(attribute, operator, value))
             else:
-                filters.append(Filter(key, None, value))
+                filters_list.append(Filter(key, None, value))
+
+        if not filters_list:
+            return self.__class__()
+
+        results = self.__class__()
 
         for elm in self:
-            if any(query.evaluate(elm) for query in args) or all(
-                filt.evaluate(elm) for filt in filters
+            if any(query.evaluate(elm) for query in queries) or all(
+                filt.evaluate(elm) for filt in filters_list
             ):
                 results.append(elm)
 
@@ -232,6 +320,8 @@ class OrmCollection(ImprovedList):
         if not key:
             if all(isinstance(item, (int, float)) for item in self):
                 return self.__class__(sorted(self))
+            elif all(isinstance(item, str) for item in self):
+                return self.__class__(sorted(self, key=len))
             raise ValueError("All elements in the list must be integers or floats.")
         if isinstance(key, str):
             return self.__class__(
@@ -346,11 +436,11 @@ class OrmCollection(ImprovedList):
         elif not args and not self._check_simple_type(self):
             raise ValueError("At least one field must be provided")
 
-        for field in args:
-            if not hasattr(self[0], field):
-                raise AttributeError(
-                    f"Le champ '{field}' n'existe pas dans la classe {self[0].__class__.__name__}."
-                )
+        # for field in args:
+        #     if not hasattr(self[0], field):
+        #         raise AttributeError(
+        #             f"Le champ '{field}' n'existe pas dans la classe {self[0].__class__.__name__}."
+        #         )
 
         distinct_values = []
         seen = set()

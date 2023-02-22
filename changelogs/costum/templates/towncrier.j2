@@ -2,7 +2,7 @@ $project_name Changelog
 ======================
 
 {% for fragment in fragments -%}
-{{ fragment.date }} : 
+{{ fragment.date }} :
     {{ fragment.type }}: {{ fragment.action }}
     {{ fragment.description | indent(4)}}
 
