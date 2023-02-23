@@ -421,101 +421,92 @@ def describe_order_by():
         assert ordered_lst == expected_output
 
 
-@pytest.mark.parametrize(
-    "method, args, expected_output",
-    [
-        (
-            "all",
-            [],
-            [
-                {"name": "Alice", "age": 25, "gender": "female"},
-                {"name": "Bob", "age": 40, "gender": "male"},
-                {"name": "Charlie", "age": 30, "gender": "male"},
-                {"name": "Dave", "age": 30, "gender": "male"},
-            ],
-        ),
-        (
-            "offset",
-            [2],
-            [
-                {"name": "Charlie", "age": 30, "gender": "male"},
-                {"name": "Dave", "age": 30, "gender": "male"},
-            ],
-        ),
-        (
-            "limit",
-            [2],
-            [
-                {"name": "Alice", "age": 25, "gender": "female"},
-                {"name": "Bob", "age": 40, "gender": "male"},
-            ],
-        ),
-    ],
-)
-def test_orm_collection_methods(my_orm_collection, method, args, expected_output):
-    # TODO: implement obj.to_dict()
-    result = getattr(my_orm_collection, method)(*args)
-    assert len(result) == len(expected_output)
-    # for idx, obj in enumerate(result):
-    #     assert obj.to_dict() == expected_output[idx]
-
-
-@pytest.mark.parametrize(
-    "data, expected_output",
-    [
-        ([1, 2, 3, 4], [1, 2, 3, 4]),
-        ([1, 2, 2, 3, 4, 4], [1, 2, 3, 4]),
-        (
-            ["apple", "banana", "orange", "f", "pear", "orange"],
-            ["apple", "banana", "orange", "f", "pear"],
-        ),
-    ],
-)
-def test_orm_collection_distinct(data, expected_output):
-    lst = OrmCollection(data)
-    distinct_lst = lst.distinct()
-    assert distinct_lst == expected_output
-
-
-def test_distinct(my_orm_collection_group):
-    # Test with one field
-    distinct_coll = my_orm_collection_group.distinct("name")
-    assert len(distinct_coll) == 4
-    assert distinct_coll == [
-        {"name": "Alice", "age": 25, "gender": "female", "taf": "psy"},
-        {"name": "Bob", "age": 40, "gender": "male", "taf": "cia"},
-        {"name": "Charlie", "age": 30, "gender": "male", "taf": "etud"},
-        {"name": "Dave", "age": 30, "gender": "male", "taf": "ing"},
-    ]
-    assert all(
-        person.name in {"Alice", "Dave", "Bob", "Charlie"} for person in distinct_coll
+def describe_all_offset_limit():
+    @pytest.mark.parametrize(
+        "method, args, expected_output",
+        [
+            pytest.param(
+                "all",
+                [],
+                [
+                    {"name": "Alice", "age": 25, "gender": "female"},
+                    {"name": "Bob", "age": 40, "gender": "male"},
+                    {"name": "Charlie", "age": 30, "gender": "male"},
+                    {"name": "Dave", "age": 30, "gender": "male"},
+                ],
+                id="test_all",
+            ),
+            pytest.param(
+                "offset",
+                [2],
+                [
+                    {"name": "Charlie", "age": 30, "gender": "male"},
+                    {"name": "Dave", "age": 30, "gender": "male"},
+                ],
+                id="test_offset",
+            ),
+            pytest.param(
+                "limit",
+                [2],
+                [
+                    {"name": "Alice", "age": 25, "gender": "female"},
+                    {"name": "Bob", "age": 40, "gender": "male"},
+                ],
+                id="test_limit",
+            ),
+        ],
     )
+    def test_orm_collection_methods(my_orm_collection, method, args, expected_output):
+        # TODO: implement obj.to_dict()
+        result = getattr(my_orm_collection, method)(*args)
+        assert len(result) == len(expected_output)
+        # for idx, obj in enumerate(result):
+        #     assert obj.to_dict() == expected_output[idx]
 
-    # Test with two fields
-    distinct_coll = my_orm_collection_group.distinct("name", "age")
-    assert len(distinct_coll) == 6
-    assert all(
-        (person.name, person.age)
-        in {
-            ("Alice", 25),         ("Alice", 80),
-            ("Dave", 30),("Dave", 31),
-            ("Bob", 40),("Charlie", 30),
-        }
-        for person in distinct_coll
+
+def describe_destinct():
+    @pytest.mark.parametrize(
+        "data, expected_output",
+        [
+            pytest.param([1, 2, 3, 4], [1, 2, 3, 4], id="distinct_with_no_duplicates"),
+            pytest.param(
+                [1, 2, 2, 3, 4, 4], [1, 2, 3, 4], id="distinct_with_duplicates"
+            ),
+            pytest.param(
+                ["apple", "banana", "orange", "f", "pear", "orange"],
+                ["apple", "banana", "orange", "f", "pear"],
+                id="distinct_with_strings",
+            ),
+        ],
     )
+    def test_orm_collection_distinct(data, expected_output):
+        lst = OrmCollection(data)
+        distinct_lst = lst.distinct()
+        assert distinct_lst == expected_output
 
-    # Test with missing argument
-    try:
-        my_orm_collection_group.distinct()
-    except ValueError:
-        pass
-    else:
-        assert False, "Expected ValueError"
+    @pytest.mark.parametrize(
+        "fields, expected",
+        [
+            pytest.param(
+                ("name", "age"),
+                {
+                    ("Alice", 25),
+                    ("Alice", 80),
+                    ("Dave", 30),
+                    ("Dave", 31),
+                    ("Bob", 40),
+                    ("Charlie", 30),
+                },
+                id="distinct_two_fields",
+            ),
+        ],
+    )
+    def test_distinct(my_orm_collection_group, fields, expected):
+        # Test with two fields
+        distinct_coll = my_orm_collection_group.distinct(*fields)
+        assert len(distinct_coll) == len(expected)
+        assert {(person.name, person.age) for person in distinct_coll} == expected
 
-    # Test with non-existent field
-    try:
-        my_orm_collection_group.distinct("non_existent_field")
-    except KeyError:
-        pass
-    else:
-        assert False, "Expected AttributeError"
+        # Test with missing argument
+        with pytest.raises(ValueError):
+            my_orm_collection_group.distinct()

@@ -1,8 +1,19 @@
 repos:
--   repo: https://github.com/psf/black
-    rev: 22.10.0
+-   repo: local
     hooks:
       - id: black
-        language_version: python3.11.0
-        additional_dependencies: [make]
-        args: [--check]
+        name: format
+        entry: make format-check
+        language: system
+        stages: [push]
+        # pass_filenames: false
+        # always_run: true
+-   repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: make tests
+        language: system
+        stages: [push]
+        pass_filenames: false
+        always_run: true

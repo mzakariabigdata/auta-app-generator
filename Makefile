@@ -58,6 +58,8 @@ app: src/app.py
 # Formate le code source en utilisant l'outil Black.
 format:
 	python -m black .
+format-check:
+	python -m black . --check
 # Vérifie le code source à l'aide de l'outil Pylint.
 lint:
 	python -m pylint src/. tests/.
@@ -97,6 +99,17 @@ docs: clean-docs
 	# cd docs && make html
 clean-docs:
 	rm -rf "$(BUILDDIR)"
+
+##########################
+###### Change logs #######
+##########################
+
+pre-commit-install:
+	pre-commit install
+pre-commit-run:
+	pre-commit run --all-files
+
+.PHONY: pre-commit-install pre-commit-run
 
 ##########################
 ###### Change logs #######
