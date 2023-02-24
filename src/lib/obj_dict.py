@@ -8,37 +8,57 @@ from src.lib.orm_collection import OrmCollection
 class ObjDict(dict):
     """Dynamic Class as dict"""
 
-    def __getattr__(self, name):
-        if name in self:
+    def __getattr__(self, name: str):
+        """Get attribute value"""
+        try:
             return self._clean_item(self[name])
-        raise KeyError("no such attribute: " + name)
+        except KeyError:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{name}'"
+            )
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value):
+        """Set Any attribute value"""
         self[name] = self._clean_item(value)
 
-    def __delattr__(self, name):
-        if name in self:
+    def __delattr__(self, name: str):
+        """Delete attribute"""
+        try:
             del self[name]
-        else:
-            raise KeyError("No such attribute: " + name)
+        except KeyError:
+            raise AttributeError(
+                f"'{self.__class__.__name__}' object has no attribute '{name}'"
+            )
 
     @property
     def inspect(self):
-        """Return a pretty formatted informatopn of object"""
-        pretty_print = pprint.PrettyPrinter(indent=4)
-        pretty_print.pprint(self)
+        """Return a pretty formatted information of object"""
+        pprint.pprint(self, indent=4)
 
-    def select(self, wanted_keys):
+    def select(self, wanted_keys: list):
         """Filter dict by returning only some keys"""
-        return self.__class__(
-            {k: v for (k, v) in self.items() if k in set(wanted_keys)}
-        )
+        if not isinstance(wanted_keys, list):
+            raise TypeError(
+                f"Argument 'wanted_keys' should be a list, got '{type(wanted_keys).__name__}' instead."
+            )
+        selected_items = {}
+        for key in wanted_keys:
+            if not isinstance(key, str):
+                raise TypeError(f"Element {key} in 'wanted_keys' list is not a string")
+            try:
+                selected_items[key] = self[key]
+            except KeyError:
+                raise KeyError(
+                    f"'{self.__class__.__name__}' object has no attribute '{key}'"
+                )
+        return self.__class__(selected_items)
 
     @staticmethod
     def _clean_item(item):
         """Improve type of object"""
         if isinstance(item, dict):
             return ObjDict(item)
-        if isinstance(item, list):
+        elif isinstance(item, list):
             return OrmCollection(item)
-        return item
+        else:
+            return item

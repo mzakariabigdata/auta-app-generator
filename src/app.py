@@ -66,10 +66,9 @@ def main2():
 
 
 def main3():
-    data = ["apple", "banana", "orange", "f", "pear", "c'est encore moi"]
-    lst = OrmCollection(data)
-    ordered_lst = lst.order_by()
-    print(ordered_lst)
+    za = ObjDict({"a": 3})
+    za.ka = "12"
+    print(za)
 
 
 if __name__ == "__main__":
