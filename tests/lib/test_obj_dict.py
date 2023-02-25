@@ -3,7 +3,23 @@ from src.lib import ObjDict
 
 
 @pytest.fixture
+def sample_obj_dict():
+    """Fixture that returns a sample ObjDict object."""
+
+    return ObjDict(
+        {
+            "name": "John",
+            "age": 30,
+            "address": {"street": "123 Main St", "city": "Anytown", "state": "CA"},
+            "scores": [90, 80, 95],
+        }
+    )
+
+
+@pytest.fixture
 def person():
+    """Fixture that returns a sample Person object."""
+
     class Person:
         def __init__(self, name, age):
             self.name = name
@@ -17,6 +33,8 @@ def person():
 
 @pytest.fixture
 def obj(person):
+    """Fixture that returns a sample ObjDict object with nested Person object."""
+
     return ObjDict({"a": 1, "test": {"zak": person}, "b": {"c": 2, "d": [3, 4]}})
 
 
@@ -39,6 +57,18 @@ def describe_objdict():
         ],
     )
     def test_obj_with_errors(obj, select_keys, expected):
+        """Test ObjDict.select() method with various error cases.
+
+        Copy code
+            Args:
+            - obj: An ObjDict object.
+            - select_keys: A list of keys or nested keys to select.
+            - expected: An expected error type.
+
+            Raises:
+            - KeyError: If a non-existent key is provided in the select_keys argument.
+            - TypeError: If the select_keys argument is not a list or if a non-string element is provided in the list.
+        """
         with expected:
             obj.select(select_keys)
 
@@ -50,6 +80,16 @@ def describe_objdict():
         ],
     )
     def test_obj_dict(obj, select_keys, expected):
+        """Test various methods of ObjDict.
+
+        Args:
+        - obj: An ObjDict object.
+        - select_keys: A list of keys or nested keys to select.
+        - expected: An expected dictionary object.
+
+        Returns: None
+        """
+
         # initialisation avec un dictionnaire
         # vérifier que l'objet initialisé est bien une instance de ObjDict
         assert isinstance(obj, ObjDict)
@@ -71,7 +111,10 @@ def describe_objdict():
         # méthode select qui filtre les clés de l'objet.
         assert expected == obj.select(select_keys)
 
-    def test_inspect_success(capsys):
+    def test_inspect_success_err(capsys):
+        """
+        Test inspect de l'objet.
+        """
         obj = ObjDict({"a": 1, "b": 2})
         obj.inspect
         captured = capsys.readouterr()
@@ -79,6 +122,9 @@ def describe_objdict():
         assert captured.err == ""
 
     def test_delattr(obj):
+        """
+        Test la suppression d'éléments avec del.
+        """
         # suppression d'éléments avec del
         del obj.a
         # lève une erreur KeyError lorsqu'un élément n'existe pas
@@ -87,3 +133,72 @@ def describe_objdict():
 
         with pytest.raises(AttributeError):
             del obj.non_existent_attribute
+
+    def test_to_dict(sample_obj_dict):
+        """
+        Test la conversion en dictionnaire.
+        """
+        expected = {
+            "name": "John",
+            "age": 30,
+            "address": {"street": "123 Main St", "city": "Anytown", "state": "CA"},
+            "scores": [90, 80, 95],
+        }
+        assert sample_obj_dict.to_dict() == expected
+
+    def test_from_dict():
+        """
+        Test la création d'un objet depuis un dictionnaire.
+        """
+        data = {
+            "name": "John",
+            "age": 30,
+            "address": {"street": "123 Main St", "city": "Anytown", "state": "CA"},
+            "scores": [90, 80, 95],
+        }
+        obj_dict = ObjDict.from_dict(data)
+        assert obj_dict.to_dict() == data
+
+    def test_update(sample_obj_dict):
+        """
+        Test la mise à jour de l'objet avec un dictionnaire.
+        """
+        data = {
+            "name": "Jane",
+            "age": 35,
+            "address": {"street": "456 Second St", "city": "Othertown", "state": "MA"},
+            "scores": [85, 95],
+        }
+        sample_obj_dict.update(data)
+        expected = {
+            "name": "Jane",
+            "age": 35,
+            "address": {
+                "street": "456 Second St",
+                "city": "Othertown",
+                "state": "MA",
+            },
+            "scores": [85, 95],
+        }
+        assert sample_obj_dict.to_dict() == expected
+
+    def test_items(sample_obj_dict):
+        """
+        Test l'accès aux éléments de l'objet sous forme de liste de tuples.
+        """
+        expected = [
+            ("name", "John"),
+            ("age", 30),
+            ("address", {"street": "123 Main St", "city": "Anytown", "state": "CA"}),
+            ("scores", [90, 80, 95]),
+        ]
+        assert sample_obj_dict.items() == expected
+
+    def test_copy(sample_obj_dict):
+        """
+        Test la copie de l'objet.
+        """
+        copied_dict = sample_obj_dict.copy()
+        assert copied_dict.to_dict() == sample_obj_dict.to_dict()
+        assert copied_dict is not sample_obj_dict
+        assert copied_dict["address"] is not sample_obj_dict["address"]

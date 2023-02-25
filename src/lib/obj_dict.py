@@ -30,6 +30,37 @@ class ObjDict(dict):
                 f"'{self.__class__.__name__}' object has no attribute '{name}'"
             )
 
+    def to_dict(self) -> dict:
+        """Return a dictionary representation of the object"""
+        result = {}
+        for key, value in self.items():
+            if isinstance(value, ObjDict):
+                result[key] = value.to_dict()
+            else:
+                result[key] = value
+        return result
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ObjDict":
+        """Create an object from a dictionary"""
+        result = cls()
+        for key, value in data.items():
+            result[key] = cls._clean_item(value)
+        return result
+
+    def update(self, data: dict):
+        """Update the object with a dictionary"""
+        for key, value in data.items():
+            self[key] = self._clean_item(value)
+
+    def items(self):
+        """Return the keys and values of the object as tuples"""
+        return [(key, self._clean_item(value)) for key, value in super().items()]
+
+    def copy(self) -> "ObjDict":
+        """Return a deep copy of the object"""
+        return self.__class__(self.to_dict())
+
     @property
     def inspect(self):
         """Return a pretty formatted information of object"""
