@@ -6,47 +6,6 @@ from io import StringIO
 import sys
 
 
-@pytest.fixture(scope="module")
-def Person():
-    """Fixture that returns a sample Person object."""
-
-    class Person:
-        def __init__(self, name, age, salary):
-            self.name = name
-            self.age = age
-            self.salary = salary
-
-        @property
-        def ret_name(self):
-            return self.name
-
-        def get_name(self):
-            return self.name
-
-        def upper_name(self):
-            return self.name.upper()
-
-        def get_age(self):
-            return self.age
-
-        def change_name(self, new_name):
-            self.name = new_name
-
-        def change_age(self, new_age):
-            self.age = new_age
-
-        def is_adult(self):
-            return self.age >= 18
-
-        def set_name(self, new_name):
-            self.name = new_name
-
-        def __repr__(self):
-            return f"Person(name='{self.name}', age={self.age}, age={self.salary} )"
-
-    return Person
-
-
 def describe_inspect():
     @pytest.mark.parametrize(
         "lst, expected_output",
@@ -115,17 +74,17 @@ def test_first(lst, n, expected_output):
 
 def describe_last():
     @pytest.mark.parametrize(
-        "lst, n, expected_output",
+        "lst, arg, expected_output",
         [
             pytest.param([1, 2, 3], (), 3, id="last_element"),
             pytest.param([1, 2, 3], (2,), ImprovedList([2, 3]), id="last_two_elements"),
             pytest.param([], (), None, id="empty_list"),
         ],
     )
-    def test_last(lst, n, expected_output):
+    def test_last(lst, arg, expected_output):
         # Test getting the last element of a list
         simple_list = ImprovedList(lst)
-        assert simple_list.last(*n) == expected_output
+        assert simple_list.last(*arg) == expected_output
 
 
 def describe_map():
@@ -198,7 +157,7 @@ def describe_map():
         person_list = ImprovedList(people)
         assert person_list.map(fucntion) == ImprovedList(expected_name_upper)
 
-    def test_map_with_args_and_kwargs(Person):
+    def test_map_with_args_and_kwargs(Person):  # pylint: disable=unused-variable
         # create an ImprovedList with some objects
         lst = ImprovedList(
             [
@@ -349,7 +308,7 @@ def describe_map():
         result = people.map(called, filter_func=filter_func)
         assert result == expected_output
 
-    def test_filter_map_person_filter(Person):
+    def test_filter_map_person_filter(Person):  # pylint: disable=unused-variable
         people = ImprovedList(
             [
                 Person("Alice", 25, 100),
@@ -407,7 +366,7 @@ def describe_map():
         ):
             people.map(".not_exist_attribut")
 
-    def test_filter_map_filter():
+    def test_filter_map_filter():  # pylint: disable=unused-variable
         # Création d'une liste de dictionnaires représentant des étudiants
         students = ImprovedList(
             [
@@ -438,7 +397,7 @@ def describe_map():
         )
         assert top_students == [{"name": "Charlie", "grades": [9, 9, 10]}]
 
-    def test_map_return_type():
+    def test_map_return_type():  # pylint: disable=unused-variable
         my_improved_list = ImprovedList(["hello", "world"])
         uppered_list = my_improved_list.map(":upper", return_type="list")
         assert uppered_list == ["HELLO", "WORLD"]
@@ -448,12 +407,12 @@ def describe_map():
         ):
             my_improved_list.map(":upper", return_type=list)
 
-    def test_map_max_elements():
+    def test_map_max_elements():  # pylint: disable=unused-variable
         my_list = ImprovedList([1, 2, 3, 4, 5])
         result = my_list.map(lambda x: x**2, max_elements=3)
         assert result == [1, 4, 9]
 
-    def test_map_reversed():
+    def test_map_reversed():  # pylint: disable=unused-variable
         # Création d'une ImprovedList
         my_list = ImprovedList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
@@ -461,12 +420,12 @@ def describe_map():
         result = my_list.map(lambda x: x * 2, reverse_order=True)
         assert result == [20, 18, 16, 14, 12, 10, 8, 6, 4, 2]
 
-    def test_map_max_elements_reversed():
+    def test_map_max_elements_reversed():  # pylint: disable=unused-variable
         my_list = ImprovedList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         result = my_list.map(lambda x: x**2, max_elements=3, reverse_order=True)
         assert result == [9, 4, 1]
 
-    def test_map_sort():
+    def test_map_sort():  # pylint: disable=unused-variable
         class MyClass:
             def __init__(self, name: str, date: str):
                 self.name = name

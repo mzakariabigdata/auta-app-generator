@@ -87,6 +87,8 @@ def main3():
         [
             MyClass("Obj1", "2022-01-05"),
             MyClass("Obj2", "2022-02-03"),
+            MyClass("Obj2", "2022-02-03"),
+            MyClass("Obj2", "2022-02-03"),
             MyClass("Obj3", "2021-12-25"),
             MyClass("Obj4", "2022-01-20"),
         ]

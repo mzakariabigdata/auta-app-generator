@@ -1,44 +1,28 @@
+"""
+Module test_obj_dict.py - Test suite for the ObjDict module.
+
+This module contains unit tests for the ObjDict implementation.
+
+Functions:
+
+  describe_objdict(): Function to test all functions for ObjDict class.
+
+To run the tests, simply execute this module as a script, e.g., 
+with the command `python -m pytest test_orm.py`.
+The tests will be discovered and run automatically by the Pytest testing framework.
+
+This module requires the following external libraries to be installed:
+# - 
+# - 
+
+"""
 import pytest
 from src.lib import ObjDict
 
 
-@pytest.fixture
-def sample_obj_dict():
-    """Fixture that returns a sample ObjDict object."""
-
-    return ObjDict(
-        {
-            "name": "John",
-            "age": 30,
-            "address": {"street": "123 Main St", "city": "Anytown", "state": "CA"},
-            "scores": [90, 80, 95],
-        }
-    )
-
-
-@pytest.fixture
-def person():
-    """Fixture that returns a sample Person object."""
-
-    class Person:
-        def __init__(self, name, age):
-            self.name = name
-            self.age = age
-
-        def __repr__(self):
-            return f"Person(name='{self.name}', age={self.age})"
-
-    return Person("zakaria", 33)
-
-
-@pytest.fixture
-def obj(person):
-    """Fixture that returns a sample ObjDict object with nested Person object."""
-
-    return ObjDict({"a": 1, "test": {"zak": person}, "b": {"c": 2, "d": [3, 4]}})
-
-
 def describe_objdict():
+    """Function to test all functions for ObjDict class."""
+
     @pytest.mark.parametrize(
         "select_keys, expected",
         [
@@ -56,7 +40,9 @@ def describe_objdict():
             "Test with non-string element in select",
         ],
     )
-    def test_obj_with_errors(obj, select_keys, expected):
+    def test_obj_with_errors(
+        obj, select_keys, expected
+    ):  # pylint: disable=unused-variable
         """Test ObjDict.select() method with various error cases.
 
         Copy code
@@ -67,7 +53,8 @@ def describe_objdict():
 
             Raises:
             - KeyError: If a non-existent key is provided in the select_keys argument.
-            - TypeError: If the select_keys argument is not a list or if a non-string element is provided in the list.
+            - TypeError: If the select_keys argument is not a list or if a non-string element is
+                            provided in the list.
         """
         with expected:
             obj.select(select_keys)
@@ -79,7 +66,7 @@ def describe_objdict():
             pytest.param([], {}, id="select_empty_list"),
         ],
     )
-    def test_obj_dict(obj, select_keys, expected):
+    def test_obj_dict(obj, select_keys, expected):  # pylint: disable=unused-variable
         """Test various methods of ObjDict.
 
         Args:
@@ -94,12 +81,12 @@ def describe_objdict():
         # vérifier que l'objet initialisé est bien une instance de ObjDict
         assert isinstance(obj, ObjDict)
         # accès aux éléments avec la notation par point
-        obj.a == 1
-        obj.test.zak.age == 33
-        obj.test.zak.name == "zakaria"
+        # obj.a == 1
+        # obj.test.zak.age == 33
+        # obj.test.zak.name == "zakaria"
         assert obj.b.c == 2
-        obj.b.d == [3, 4]
-        obj.ka = "12"
+        # obj.b.d == [3, 4]
+        # obj.ka = "12"
 
         # s'assurer que la valeur assignée est toujours un dictionnaire
         # with pytest.raises(TypeError):
@@ -111,17 +98,17 @@ def describe_objdict():
         # méthode select qui filtre les clés de l'objet.
         assert expected == obj.select(select_keys)
 
-    def test_inspect_success_err(capsys):
+    def test_inspect_success_err(capsys):  # pylint: disable=unused-variable
         """
         Test inspect de l'objet.
         """
         obj = ObjDict({"a": 1, "b": 2})
-        obj.inspect
+        obj.inspect  # pylint: disable=pointless-statement
         captured = capsys.readouterr()
         assert captured.out == "{'a': 1, 'b': 2}\n"
         assert captured.err == ""
 
-    def test_delattr(obj):
+    def test_delattr(obj):  # pylint: disable=unused-variable
         """
         Test la suppression d'éléments avec del.
         """
@@ -129,12 +116,12 @@ def describe_objdict():
         del obj.a
         # lève une erreur KeyError lorsqu'un élément n'existe pas
         with pytest.raises(AttributeError):
-            obj.a
+            obj.a  # pylint: disable=pointless-statement
 
         with pytest.raises(AttributeError):
             del obj.non_existent_attribute
 
-    def test_to_dict(sample_obj_dict):
+    def test_to_dict(sample_obj_dict):  # pylint: disable=unused-variable
         """
         Test la conversion en dictionnaire.
         """
@@ -146,7 +133,7 @@ def describe_objdict():
         }
         assert sample_obj_dict.to_dict() == expected
 
-    def test_from_dict():
+    def test_from_dict():  # pylint: disable=unused-variable
         """
         Test la création d'un objet depuis un dictionnaire.
         """
@@ -159,7 +146,7 @@ def describe_objdict():
         obj_dict = ObjDict.from_dict(data)
         assert obj_dict.to_dict() == data
 
-    def test_update(sample_obj_dict):
+    def test_update(sample_obj_dict):  # pylint: disable=unused-variable
         """
         Test la mise à jour de l'objet avec un dictionnaire.
         """
@@ -182,7 +169,7 @@ def describe_objdict():
         }
         assert sample_obj_dict.to_dict() == expected
 
-    def test_items(sample_obj_dict):
+    def test_items(sample_obj_dict):  # pylint: disable=unused-variable
         """
         Test l'accès aux éléments de l'objet sous forme de liste de tuples.
         """
@@ -194,7 +181,7 @@ def describe_objdict():
         ]
         assert sample_obj_dict.items() == expected
 
-    def test_copy(sample_obj_dict):
+    def test_copy(sample_obj_dict):  # pylint: disable=unused-variable
         """
         Test la copie de l'objet.
         """

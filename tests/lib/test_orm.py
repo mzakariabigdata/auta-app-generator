@@ -1,8 +1,31 @@
-import pytest
+"""
+Module test_orm.py - Test suite for the ORMCollection module.
+
+This module contains unit tests for the ORM (Object-Relational Mapping) for ObjDict implementation.
+
+Functions:
+
+  describe_find_by(): Function to test the find_by() method of ORMCollection clas.
+  describe_where(): Function to test the where() method of ORMCollection class.
+  describe_group_by(): Function to test the group_by() method of ORMCollection class.
+  describe_destinct(): Function to test the destinct() method of ORMCollection class.
+  describe_all_offset_limit(): Function to test the all(), offset and limit of ORMCollection class.
+  describe_order_by(): Function to test the order_by() method of ORMCollection class.
+
+To run the tests, simply execute this module as a script, e.g., 
+with the command `python -m pytest test_orm.py`.
+The tests will be discovered and run automatically by the Pytest testing framework.
+
+This module requires the following external libraries to be installed:
+# - 
+# - 
+
+"""
+
 import re
+import pytest
 from src.lib import (
     OrmCollection,
-    ObjDict,
     BaseMultipleFound,
     BaseNotFound,
     Query,
@@ -10,34 +33,16 @@ from src.lib import (
 )
 
 
-@pytest.fixture
-def my_orm_collection():
-    return OrmCollection(
-        [
-            ObjDict({"name": "Alice", "age": 25, "gender": "female"}),
-            ObjDict({"name": "Bob", "age": 40, "gender": "male"}),
-            ObjDict({"name": "Charlie", "age": 30, "gender": "male"}),
-            ObjDict({"name": "Dave", "age": 30, "gender": "male"}),
-        ]
-    )
-
-
-@pytest.fixture
-def my_orm_collection_group():
-    return OrmCollection(
-        [
-            ObjDict({"name": "Alice", "age": 25, "gender": "female", "taf": "psy"}),
-            ObjDict({"name": "Alice", "age": 80, "gender": "male", "taf": "retraite"}),
-            ObjDict({"name": "Bob", "age": 40, "gender": "male", "taf": "cia"}),
-            ObjDict({"name": "Charlie", "age": 30, "gender": "male", "taf": "etud"}),
-            ObjDict({"name": "Charlie", "age": 30, "gender": "male", "taf": "prof"}),
-            ObjDict({"name": "Dave", "age": 30, "gender": "male", "taf": "ing"}),
-            ObjDict({"name": "Dave", "age": 31, "gender": "male", "taf": "chomor"}),
-        ]
-    )
-
-
 def describe_where():
+    """Function to test the where() method of the ORMCollection class.
+
+        This function uses the `pytest.mark.parametrize()` decorator to define a set of test cases
+    that cover various use cases of the `where()` method.
+
+    Each test case calls the `where()` method with a specific query and asserts that the returned
+    results match the expected results.
+    """
+
     # Paramétrisation des tests
     @pytest.mark.parametrize(
         "query, expected_names",
@@ -190,13 +195,15 @@ def describe_where():
                 {"Charlie"},
                 id="name_ends_with_ie",
             ),
-            # Test pour trouver tous les éléments avec un nom vide (devrait renvoyer tous les éléments)
+            # Test pour trouver tous les éléments avec un nom vide
+            # (devrait renvoyer tous les éléments)
             pytest.param(
                 {"name": ""}, {"Alice", "Bob", "Charlie", "Dave"}, id="name_empty"
             ),
             # Test  sans paramètres (devrait renvoyer 0 éléments)
             pytest.param({}, set(), id="no_params"),
-            # Test pour trouver tous les éléments avec l'âge égal à 100 (devrait renvoyer un ensemble vide)
+            # Test pour trouver tous les éléments avec l'âge égal à 100
+            # (devrait renvoyer un ensemble vide)
             pytest.param({"age": 100}, set(), id="age=100"),
             # Test pour trouver tous les éléments avec le nom commençant par "A"
             pytest.param({"name": "^A.*"}, {"Alice"}, id="name_starts_with_A"),
@@ -215,7 +222,7 @@ def describe_where():
         # Test finding elements with the given query
         results = my_orm_collection.where(**query)
         assert len(results) == len(expected_names)
-        assert set([result["name"] for result in results]) == expected_names
+        assert {result["name"] for result in results} == set(expected_names)
 
         # Test that where function returns a new OrmCollection instance
         results = my_orm_collection.where(age=25)
@@ -223,6 +230,15 @@ def describe_where():
 
 
 def describe_find_by():
+    """Function to test the find_by() method of the ORMCollection class.
+
+        This function uses the `pytest.mark.parametrize()` decorator to define a set of test cases
+    that cover various use cases of the `find_by()` method.
+
+    Each test case calls the `find_by()` method with a specific query and asserts that the returned
+    results match the expected results.
+    """
+
     @pytest.mark.parametrize(
         "query, expected_result",
         [
@@ -256,6 +272,15 @@ def describe_find_by():
 
 
 def describe_group_by():
+    """Function to test the group_by() method of the ORMCollection class.
+
+        This function uses the `pytest.mark.parametrize()` decorator to define a set of test cases
+    that cover various use cases of the `group_by()` method.
+
+    Each test case calls the `group_by()` method with a specific query and asserts that the returned
+    results match the expected results.
+    """
+
     @pytest.mark.parametrize(
         "group_func,expected_output",
         [
@@ -350,6 +375,15 @@ def describe_group_by():
 
 
 def describe_order_by():
+    """Function to test the order_by(() method of the ORMCollection class.
+
+        This function uses the `pytest.mark.parametrize()` decorator to define a set of test cases
+    that cover various use cases of the `order_by(()` method.
+
+    Each test case calls the `order_by()` method with a specific query and asserts that the returned
+    results match the expected results.
+    """
+
     @pytest.mark.parametrize(
         "order_by_key, expected_output",
         [
@@ -379,13 +413,20 @@ def describe_order_by():
         ordered_lst = my_orm_collection.order_by(order_by_key)
         assert ordered_lst == expected_output
 
-    def test_order_by_with_invalid_key_type(my_orm_collection):
-        with pytest.raises(TypeError):
-            my_orm_collection.order_by(123)
+    @pytest.mark.parametrize(
+        "invalid_key_type, expected_error",
+        [(123, TypeError), (None, ValueError)],
+        ids=["invalid_key_type_type_error", "missing_key_func_value_error"],
+    )
+    def test_order_by_with_invalid_key_type(
+        my_orm_collection, invalid_key_type, expected_error
+    ):
+        with pytest.raises(expected_error):
+            my_orm_collection.order_by(invalid_key_type)
 
         lst = OrmCollection([4, 2, 1, "3"])
-        with pytest.raises(ValueError):
-            lst.order_by()
+        with pytest.raises(expected_error):
+            lst.order_by(invalid_key_type)
 
     @pytest.mark.parametrize(
         "data, expected_output",
@@ -409,7 +450,7 @@ def describe_order_by():
             ([4, 2, 1, 3], lambda x: -x, [4, 3, 2, 1]),
             (
                 ["apple", "banana", "orange", "f", "pear", "c'est encore moi"],
-                lambda x: len(x),
+                len,
                 ["f", "pear", "apple", "banana", "orange", "c'est encore moi"],
             ),
         ],
@@ -422,6 +463,15 @@ def describe_order_by():
 
 
 def describe_all_offset_limit():
+    """Function to test the all(), limit() and offset() methods of the ORMCollection class.
+
+        This function uses the `pytest.mark.parametrize()` decorator to define a set of test cases
+    that cover various use cases of the `all()`, `limit()` and `where()` methods.
+
+    Each test case calls the `all()`, `limit()` and `where()` methodswith a specific query and
+    asserts that the returned results match the expected results.
+    """
+
     @pytest.mark.parametrize(
         "method, args, expected_output",
         [
@@ -457,7 +507,7 @@ def describe_all_offset_limit():
         ],
     )
     def test_orm_collection_methods(my_orm_collection, method, args, expected_output):
-        # TODO: implement obj.to_dict()
+        # [X] TODO: implement obj.to_dict()
         result = getattr(my_orm_collection, method)(*args)
         assert len(result) == len(expected_output)
         # for idx, obj in enumerate(result):
@@ -465,6 +515,15 @@ def describe_all_offset_limit():
 
 
 def describe_destinct():
+    """Function to test the destinct() method of the ORMCollection class.
+
+        This function uses the `pytest.mark.parametrize()` decorator to define a set of test cases
+    that cover various use cases of the `destinct()` method.
+
+    Each test case calls the `destinct()` method with a specific query and asserts that the returned
+    results match the expected results.
+    """
+
     @pytest.mark.parametrize(
         "data, expected_output",
         [
