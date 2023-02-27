@@ -1,12 +1,31 @@
-import pytest
-from datetime import date, datetime
-from src.lib import ImprovedList
-from pytest_lazyfixture import lazy_fixture
-from io import StringIO
+"""Module test_improv_list.py - Test suite for the ImprovedList module.
+
+This module contains unit tests for the ImprovedList implementation.
+
+Functions:
+
+  describe_inspect(): Function to test inspect() function for ImprovedList class.
+  describe_last(): Function to test last() function for ImprovedList class.
+  describe_map(): Function to test map() function for ImprovedList class.
+  describe_fisrt(): Function to test fisrt() function for ImprovedList class.
+
+  To run the tests, simply execute this module as a script, e.g., 
+with the command `python -m pytest test_improv_list.py`.
+The tests will be discovered and run automatically by the Pytest testing framework.
+
+This module requires the following external libraries to be installed:
+-
+"""
 import sys
+from datetime import datetime
+from io import StringIO
+import pytest
+from src.lib import ImprovedList
 
 
 def describe_inspect():
+    """Describe inspect() function of ImprovedList"""
+
     @pytest.mark.parametrize(
         "lst, expected_output",
         [
@@ -19,7 +38,7 @@ def describe_inspect():
             ),
             pytest.param(
                 [1, "string", [1, 2], {"a": 1, "b": {"z": 1, "m": [1, 2]}}],
-                "ImprovedList(int) data:\n1\n'string'\n[1, 2]\n{'a': 1, 'b': {'m': [1, 2], 'z': 1}}\n",
+                "ImprovedList(int) data:\n1\n'string'\n[1, 2]\n{'a': 1, 'b': {'m': [1, 2], 'z': 1}}\n",  # pylint: disable=line-too-long
                 id="complex_list",
             ),
         ],
@@ -27,26 +46,33 @@ def describe_inspect():
     def test_inspect(lst, expected_output, capsys):
         # Test display of an ImprovedList object
         lst = ImprovedList(lst)
-        lst.inspect
+        lst.inspect  # pylint: disable=pointless-statement
         captured = capsys.readouterr()
         assert captured.out == expected_output
         assert captured.err == ""
 
-    def test_inspect_obj():
+    def test_inspect_obj():  # pylint: disable=unused-variable
         # Test that inspect method is called on element with inspect method defined
         class Inspectable:
+            """Inspectable class for test"""
+
             def __init__(self, name):
                 self.name = name
 
             def inspect(self):
+                """inspect function"""
                 print(f"Inspectable({self.name})")
+
+            def set_name(self, new_name):
+                """set name function"""
+                self.name = new_name
 
         inspectable_list = ImprovedList(
             [Inspectable("element1"), Inspectable("element2")]
         )
         captured_output = StringIO()  # créer un StringIO pour capturer la sortie
         sys.stdout = captured_output  # rediriger la sortie standard vers StringIO
-        inspectable_list.inspect == 5  # appeler la méthode inspect() sur la liste
+        inspectable_list.inspect  # appeler la méthode inspect() sur la liste # pylint: disable=pointless-statement
         sys.stdout = (
             sys.__stdout__
         )  # remettre la sortie standard à sa valeur par défaut
@@ -56,23 +82,35 @@ def describe_inspect():
         )  # la chaîne de caractères attendue pour la sortie de la méthode
 
 
-@pytest.mark.parametrize(
-    "lst, n, expected_output",
-    [
-        pytest.param([1, 2, 3], (), 1, id="test_first_simple_list"),
-        pytest.param(
-            [1, 2, 3], (2,), ImprovedList([1, 2]), id="test_first_two_elements"
-        ),
-        pytest.param([], (), None, id="test_first_empty_list"),
-    ],
-)
-def test_first(lst, n, expected_output):
-    # Test getting the first element of a list
-    simple_list = ImprovedList(lst)
-    assert simple_list.first(*n) == expected_output
+def describe_fist():
+    """Describe fist() function of ImprovedList"""
+
+    @pytest.mark.parametrize(
+        "lst, args, expected_output",
+        [
+            pytest.param([1, 2, 3], (), 1, id="test_first_simple_list"),
+            pytest.param(
+                [1, 2, 3], (2,), ImprovedList([1, 2]), id="test_first_two_elements"
+            ),
+            pytest.param([], (), None, id="test_first_empty_list"),
+        ],
+    )
+    def test_first(lst, args, expected_output):
+        """Test first() function of ImprovedList
+
+        Args:
+            lst (list): list of data
+            args (int): n fist element
+            expected_output (any): return any obj
+        """
+        # Test getting the first element of a list
+        simple_list = ImprovedList(lst)
+        assert simple_list.first(*args) == expected_output
 
 
 def describe_last():
+    """Descripe last() function of ImprovedList"""
+
     @pytest.mark.parametrize(
         "lst, arg, expected_output",
         [
@@ -87,7 +125,9 @@ def describe_last():
         assert simple_list.last(*arg) == expected_output
 
 
-def describe_map():
+def describe_map():  # pylint: disable=too-many-statements
+    """Descripe map() function of ImprovedList"""
+
     @pytest.mark.parametrize(
         "lst, attribute, expected_output",
         [
@@ -127,13 +167,15 @@ def describe_map():
 
         with pytest.raises(
             TypeError,
-            match="called must be a string start with ':' for obj method or '.' obj attribute, or a callable",
+            match="called must be a string start with ':' for obj method or '.' obj attribute, "
+            "or a callable",
         ):
             simple_list.map(1)
 
         with pytest.raises(
             TypeError,
-            match="called must be a string start with ':' for obj method or '.' obj attribute, or a callable",
+            match="called must be a string start with ':' for obj method or '.' obj attribute, "
+            "or a callable",
         ):
             simple_list.map("test error")
 
@@ -147,23 +189,23 @@ def describe_map():
             pytest.param(":get_age", [25, 12, 35], id="map_get_age"),
         ],
     )
-    def test_map_person(Person, fucntion, expected_name_upper):
+    def test_map_person(person_class, fucntion, expected_name_upper):
         # Test calling a method on each element of a list of Person objects
         people = [
-            Person("Alice", 25, 100),
-            Person("Bob", 12, 364),
-            Person("Charlie", 35, 740),
+            person_class("Alice", 25, 100),
+            person_class("Bob", 12, 364),
+            person_class("Charlie", 35, 740),
         ]
         person_list = ImprovedList(people)
         assert person_list.map(fucntion) == ImprovedList(expected_name_upper)
 
-    def test_map_with_args_and_kwargs(Person):  # pylint: disable=unused-variable
+    def test_map_with_args_and_kwargs(person_class):  # pylint: disable=unused-variable
         # create an ImprovedList with some objects
         lst = ImprovedList(
             [
-                Person("Alice", 25, 100),
-                Person("Bob", 30, 364),
-                Person("Charlie", 35, 740),
+                person_class("Alice", 25, 100),
+                person_class("Bob", 30, 364),
+                person_class("Charlie", 35, 740),
             ]
         )
 
@@ -208,17 +250,19 @@ def describe_map():
                 {"new_age": 50},
                 "age",
                 [50, 50, 50],
-            ),  # Appeler la méthode "change_age" pour chaque objet en utilisant ":", ce qui équivaut à appeler "obj.change_age("new_age" = 50)"
+            ),
+            # Appeler la méthode "change_age" pour chaque objet en utilisant ":",
+            # ce qui équivaut à appeler "obj.change_age("new_age" = 50)"
         ],
     )
     def test_map_method_obj(
-        Person, methode_obj, new_attribut, attribut, expected_names
+        person_class, methode_obj, new_attribut, attribut, expected_names
     ):
         people = ImprovedList(
             [
-                Person("Alice", 25, 100),
-                Person("Bob", 30, 364),
-                Person("Charlie", 35, 740),
+                person_class("Alice", 25, 100),
+                person_class("Bob", 30, 364),
+                person_class("Charlie", 35, 740),
             ]
         )
         # Appeler la méthode avec des arguments et des kwargs sur chaque objet de la liste
@@ -232,12 +276,12 @@ def describe_map():
             (".age", "age", [25, 30, 35]),
         ],
     )
-    def test_map_attrbut_obj(Person, attribut_obj, attribut, expected_names):
+    def test_map_attrbut_obj(person_class, attribut_obj, attribut, expected_names):
         people = ImprovedList(
             [
-                Person("Alice", 25, 100),
-                Person("Bob", 30, 364),
-                Person("Charlie", 35, 740),
+                person_class("Alice", 25, 100),
+                person_class("Bob", 30, 364),
+                person_class("Charlie", 35, 740),
             ]
         )
         # Appeler la méthode avec des arguments et des kwargs sur chaque objet de la liste
@@ -274,12 +318,14 @@ def describe_map():
             ),
         ],
     )
-    def test_filter_map_no_person_filter(Person, called, filter_func, expected_output):
+    def test_filter_map_no_person_filter(
+        person_class, called, filter_func, expected_output
+    ):
         people = ImprovedList(
             [
-                Person("Alice", 25, 100),
-                Person("Bob", 30, 364),
-                Person("Charlie", 35, 740),
+                person_class("Alice", 25, 100),
+                person_class("Bob", 30, 364),
+                person_class("Charlie", 35, 740),
                 1,
                 2,
                 3,
@@ -308,12 +354,12 @@ def describe_map():
         result = people.map(called, filter_func=filter_func)
         assert result == expected_output
 
-    def test_filter_map_person_filter(Person):  # pylint: disable=unused-variable
+    def test_filter_map_person_filter(person_class):  # pylint: disable=unused-variable
         people = ImprovedList(
             [
-                Person("Alice", 25, 100),
-                Person("Bob", 30, 364),
-                Person("Charlie", 35, 740),
+                person_class("Alice", 25, 100),
+                person_class("Bob", 30, 364),
+                person_class("Charlie", 35, 740),
                 1,
                 2,
                 3,
@@ -342,23 +388,25 @@ def describe_map():
 
         result = people.map(
             lambda x: x.get_name(),
-            filter_func=lambda x: isinstance(x, Person) and x.age >= 30,
+            filter_func=lambda x: isinstance(x, person_class) and x.age >= 30,
         )
         assert result == ImprovedList(["Bob", "Charlie"])
 
         result = people.map(
-            ":get_name", filter_func=lambda x: isinstance(x, Person) and x.age >= 30
+            ":get_name",
+            filter_func=lambda x: isinstance(x, person_class) and x.age >= 30,
         )
         assert result == ImprovedList(["Bob", "Charlie"])
 
         result = people.map(
-            ".name", filter_func=lambda x: isinstance(x, Person) and x.age >= 30
+            ".name", filter_func=lambda x: isinstance(x, person_class) and x.age >= 30
         )
         assert result == ImprovedList(["Bob", "Charlie"])
 
         with pytest.raises(TypeError, match="ret_name is not callable"):
             people.map(
-                ":ret_name", filter_func=lambda x: isinstance(x, Person) and x.age >= 30
+                ":ret_name",
+                filter_func=lambda x: isinstance(x, person_class) and x.age >= 30,
             )
 
         with pytest.raises(
@@ -377,7 +425,7 @@ def describe_map():
         )
 
         # Définition d'une fonction qui retourne la moyenne des notes d'un étudiant
-        def average_grades(student, *args, **kwargs):
+        def average_grades(student, **kwargs):
             if "weights" in kwargs:
                 weights = kwargs["weights"]
                 if len(weights) != len(student["grades"]):
@@ -388,10 +436,11 @@ def describe_map():
                     grade * weight for grade, weight in zip(student["grades"], weights)
                 ]
                 return sum(grades) / sum(weights)
-            else:
-                return sum(student["grades"]) / len(student["grades"])
 
-        # Application de la fonction average_grades aux étudiants ayant une note moyenne supérieure à 8
+            return sum(student["grades"]) / len(student["grades"])
+
+        # Application de la fonction average_grades aux étudiants
+        # ayant une note moyenne supérieure à 8
         top_students = students.filter(
             lambda s: average_grades(s, weights=[3, 1, 1]) > 8
         )
@@ -426,7 +475,9 @@ def describe_map():
         assert result == [9, 4, 1]
 
     def test_map_sort():  # pylint: disable=unused-variable
-        class MyClass:
+        class MyClass:  # pylint: disable=too-few-public-methods
+            """class for test"""
+
             def __init__(self, name: str, date: str):
                 self.name = name
                 self.date = datetime.strptime(date, "%Y-%m-%d")
@@ -445,6 +496,7 @@ def describe_map():
         def sort_by_date(obj: MyClass) -> datetime:
             return obj.date
 
-        # Utiliser la méthode map avec la fonction de tri pour obtenir une liste triée des noms d'objets MyClass
+        # Utiliser la méthode map avec la fonction de tri pour obtenir une
+        # liste triée des noms d'objets MyClass
         sorted_names = objects.map(called=lambda obj: obj.name, sort_func=sort_by_date)
         assert sorted_names == ["Obj3", "Obj1", "Obj4", "Obj2"]

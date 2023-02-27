@@ -87,6 +87,7 @@ def describe_where():
             pytest.param({"age__lt": "25"}, TypeError, id="type_error_age_lt_25"),
             pytest.param({"age__not": "25"}, TypeError, id="type_error_age_not_25"),
             pytest.param({"age__lte": "25"}, TypeError, id="type_error_age_lte_25"),
+            pytest.param({"age__eq": "25"}, TypeError, id="type_error_age_eq_25"),
             pytest.param({"age__gte": "25"}, TypeError, id="type_error_age_gte_25"),
             pytest.param({"age__in": 25}, TypeError, id="type_error_age_in_25"),
             pytest.param(
@@ -156,6 +157,11 @@ def describe_where():
                 {"age__not": 40, "name__contains": "v"},
                 {"Dave"},
                 id="age!=40&name_contains_v",
+            ),
+            pytest.param(
+                {"age__eq": 40, "name__contains": "b"},
+                {"Bob"},
+                id="age==40&name_contains_b",
             ),
             pytest.param(
                 {"age__lte": 30, "name__contains": "v"},

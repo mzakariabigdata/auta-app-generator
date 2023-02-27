@@ -194,7 +194,6 @@ class ImprovedList(list):
         # Convertir le résultat en ImprovedList ou en list en fonction de return_type.
         if return_type == "ImprovedList":
             return self.__class__(result)
-        elif return_type == "list":
+        if return_type == "list":
             return list(result)
-        else:
-            raise ValueError("return_type must be 'ImprovedList' or 'list'")
+        raise ValueError("return_type must be 'ImprovedList' or 'list'")

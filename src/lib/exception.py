@@ -1,3 +1,6 @@
+""" exception Module """
+
+
 class BaseError(Exception):
     """Base Exception"""
 

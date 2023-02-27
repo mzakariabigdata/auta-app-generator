@@ -89,7 +89,6 @@ class ObjDict(dict):
         """Improve type of object"""
         if isinstance(item, dict):
             return ObjDict(item)
-        elif isinstance(item, list):
+        if isinstance(item, list):
             return OrmCollection(item)
-        else:
-            return item
+        return item

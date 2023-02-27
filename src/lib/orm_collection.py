@@ -1,93 +1,170 @@
+# pylint: disable=missing-function-docstring, unnecessary-lambda, line-too-long
+"""
+Module providing the `OrmCollection` class, which allows easy querying and filtering of collections of objects.
+
+The `OrmCollection` class is designed to work with any iterable of objects, providing a simple and consistent interface for filtering, sorting, and transforming the collection.
+It allows for the use of chained queries, so that multiple filters and transformations can be applied to a collection in a single statement.
+
+"""
 import re
 from typing import Any, List, Union, Dict
+from collections import OrderedDict
 from src.lib.improved_list import ImprovedList
 from src.lib.exception import BaseMultipleFound, BaseNotFound
-from collections import OrderedDict
 
 
 class Filter:
+    """
+    A helper class for creating filters on collections of data.
+
+    This class provides several static methods for performing common filtering operations,
+    such as checking if a value is less than another value, or checking if a string starts
+    with a certain prefix.
+
+    Attributes:
+        op_funcs (Dict[str, Callable[[Any, Any], bool]]): A dictionary of filter operation
+            functions, mapping operation names to their corresponding functions.
+
+    Methods:
+        less_than(first_operand: Any, second_operand: Any) -> bool:
+            Returns True if the first operand is less than the second operand, otherwise raises a TypeError.
+
+        greater_than(first_operand: Any, second_operand: Any) -> bool:
+            Returns True if the first operand is greater than the second operand, otherwise raises a TypeError.
+
+        less_than_or_equal_to(first_operand: Any, second_operand: Any) -> bool:
+            Returns True if the first operand is less than or equal to the second operand, otherwise raises a TypeError.
+
+        greater_than_or_equal_to(first_operand: Any, second_operand: Any) -> bool:
+            Returns True if the first operand is greater than or equal to the second operand, otherwise raises a TypeError.
+
+        equal_to(first_operand: Any, second_operand: Any) -> bool:
+            Returns True if the first operand is equal to the second operand, otherwise raises a TypeError.
+
+        not_equal_to(first_operand: Any, second_operand: Any) -> bool:
+            Returns True if the first operand is not equal to the second operand, otherwise raises a TypeError.
+
+        in_list(first_operand: Any, second_operand: Union[List, Tuple]) -> bool:
+            Returns True if the first operand is in the second operand list, otherwise raises a TypeError.
+
+        not_in_list(first_operand: Any, second_operand: Union[List, Tuple]) -> bool:
+            Returns True if the first operand is not in the second operand list, otherwise raises a TypeError.
+
+        starts_with(first_operand: str, second_operand: str) -> bool:
+            Returns True if the first string starts with the second string, otherwise raises a TypeError.
+
+        ends_with(first_operand: str, second_operand: str) -> bool:
+            Returns True if the first string ends with the second string, otherwise raises a TypeError.
+
+        contains_string(first_operand: str, second_operand: str) -> bool:
+            Returns True if the first string contains the second string, otherwise raises a TypeError.
+
+        raise_type_error(operation: str, first_operand: Any, second_operand: Any) -> None:
+            Raises a TypeError with a message indicating that the given operation is not valid
+            for the types of the first and second operands.
+    """
+
     op_funcs = {
-        "lt": lambda x, y: Filter.less_than(x, y),
-        "gt": lambda x, y: Filter.greater_than(x, y),
-        "endswith": lambda x, y: Filter.ends_with(x, y),
-        "startswith": lambda x, y: Filter.starts_with(x, y),
-        "in": lambda x, y: Filter.in_list(x, y),
-        "contains": lambda x, y: Filter.contains_string(x, y),
-        "nin": lambda x, y: Filter.not_in_list(x, y),
-        "not": lambda x, y: Filter.not_equal_to(x, y),
-        "lte": lambda x, y: Filter.less_than_or_equal_to(x, y),
-        "gte": lambda x, y: Filter.greater_than_or_equal_to(x, y),
+        "lt": lambda first_operand, second_operand: Filter.less_than(
+            first_operand, second_operand
+        ),
+        "gt": lambda first_operand, second_operand: Filter.greater_than(
+            first_operand, second_operand
+        ),
+        "endswith": lambda first_operand, second_operand: Filter.ends_with(
+            first_operand, second_operand
+        ),
+        "startswith": lambda first_operand, second_operand: Filter.starts_with(
+            first_operand, second_operand
+        ),
+        "in": lambda first_operand, second_operand: Filter.in_list(
+            first_operand, second_operand
+        ),
+        "contains": lambda first_operand, second_operand: Filter.contains_string(
+            first_operand, second_operand
+        ),
+        "nin": lambda first_operand, second_operand: Filter.not_in_list(
+            first_operand, second_operand
+        ),
+        "not": lambda first_operand, second_operand: Filter.not_equal_to(
+            first_operand, second_operand
+        ),
+        "eq": lambda first_operand, second_operand: Filter.equal_to(
+            first_operand, second_operand
+        ),
+        "lte": lambda first_operand, second_operand: Filter.less_than_or_equal_to(
+            first_operand, second_operand
+        ),
+        "gte": lambda first_operand, second_operand: Filter.greater_than_or_equal_to(
+            first_operand, second_operand
+        ),
     }
 
     @staticmethod
-    def less_than(x: Any, y: Any) -> bool:
-        if type(x) == type(y):
-            return x < y
-        else:
-            Filter.raise_type_error("<", x, y)
+    def less_than(first_operand: Any, second_operand: Any) -> bool:
+        if isinstance(first_operand, type(second_operand)):
+            return first_operand < second_operand
+        return Filter.raise_type_error("<", first_operand, second_operand)
 
     @staticmethod
-    def greater_than(x: Any, y: Any) -> bool:
-        if type(x) == type(y):
-            return x > y
-        else:
-            Filter.raise_type_error(">", x, y)
+    def greater_than(first_operand: Any, second_operand: Any) -> bool:
+        if isinstance(first_operand, type(second_operand)):
+            return first_operand > second_operand
+        return Filter.raise_type_error(">", first_operand, second_operand)
 
     @staticmethod
-    def ends_with(x: str, y: str) -> bool:
-        if isinstance(x, str) and isinstance(y, str):
-            return x.endswith(y)
-        else:
-            Filter.raise_type_error("endswith", x, y)
+    def ends_with(first_operand: str, second_operand: str) -> bool:
+        if isinstance(first_operand, str) and isinstance(second_operand, str):
+            return first_operand.endswith(second_operand)
+        return Filter.raise_type_error("endswith", first_operand, second_operand)
 
     @staticmethod
-    def starts_with(x: str, y: str) -> bool:
-        if isinstance(x, str) and isinstance(y, str):
-            return x.startswith(y)
-        else:
-            Filter.raise_type_error("startswith", x, y)
+    def starts_with(first_operand: str, second_operand: str) -> bool:
+        if isinstance(first_operand, str) and isinstance(second_operand, str):
+            return first_operand.startswith(second_operand)
+        return Filter.raise_type_error("startswith", first_operand, second_operand)
 
     @staticmethod
-    def in_list(x: Any, y: Any) -> bool:
-        if type(y) in (list, set):
-            return x in y
-        else:
-            Filter.raise_type_error("in", x, y)
+    def in_list(first_operand: Any, second_operand: Any) -> bool:
+        if type(second_operand) in (list, set):
+            return first_operand in second_operand
+        return Filter.raise_type_error("in", first_operand, second_operand)
 
     @staticmethod
-    def contains_string(x: str, y: str) -> bool:
-        if isinstance(x, str) and isinstance(y, str):
-            return y in x
-        else:
-            Filter.raise_type_error("contains", x, y)
+    def contains_string(first_operand: str, second_operand: str) -> bool:
+        if isinstance(first_operand, str) and isinstance(second_operand, str):
+            return second_operand in first_operand
+        return Filter.raise_type_error("contains", first_operand, second_operand)
 
     @staticmethod
-    def not_in_list(x: Any, y: Any) -> bool:
-        if type(y) in (list, set):
-            return x not in y
-        else:
-            Filter.raise_type_error("nin", x, y)
+    def not_in_list(first_operand: Any, second_operand: Any) -> bool:
+        if type(second_operand) in (list, set):
+            return first_operand not in second_operand
+        return Filter.raise_type_error("nin", first_operand, second_operand)
 
     @staticmethod
-    def not_equal_to(x: Any, y: Any) -> bool:
-        if type(x) == type(y):
-            return x != y
-        else:
-            Filter.raise_type_error("!=", x, y)
+    def equal_to(first_operand: Any, second_operand: Any) -> bool:
+        if isinstance(first_operand, type(second_operand)):
+            return first_operand == second_operand
+        return Filter.raise_type_error("==", first_operand, second_operand)
 
     @staticmethod
-    def less_than_or_equal_to(x: Any, y: Any) -> bool:
-        if type(x) == type(y):
-            return x <= y
-        else:
-            Filter.raise_type_error("<=", x, y)
+    def not_equal_to(first_operand: Any, second_operand: Any) -> bool:
+        if isinstance(first_operand, type(second_operand)):
+            return first_operand != second_operand
+        return Filter.raise_type_error("!=", first_operand, second_operand)
 
     @staticmethod
-    def greater_than_or_equal_to(x: Any, y: Any) -> bool:
-        if type(x) == type(y):
-            return x >= y
-        else:
-            Filter.raise_type_error(">=", x, y)
+    def less_than_or_equal_to(first_operand: Any, second_operand: Any) -> bool:
+        if isinstance(first_operand, type(second_operand)):
+            return first_operand <= second_operand
+        return Filter.raise_type_error("<=", first_operand, second_operand)
+
+    @staticmethod
+    def greater_than_or_equal_to(first_operand: Any, second_operand: Any) -> bool:
+        if isinstance(first_operand, type(second_operand)):
+            return first_operand >= second_operand
+        return Filter.raise_type_error(">=", first_operand, second_operand)
 
     def __init__(self, attribute: str, operator: str, value: Any):
         self.attribute = attribute
@@ -100,14 +177,12 @@ class Filter:
         if self.operator is not None:
             if self.operator in self.op_funcs:
                 return self.op_funcs[self.operator](attr_value, self.value)
-            else:
-                raise ValueError(f"Invalid operator {self.operator}")
-        elif self.contains_regex(self.value):
+            raise ValueError(f"Invalid operator {self.operator}")
+        if self.contains_regex(self.value):
             return re.match(self.value, attr_value)
-        else:
-            return attr_value == self.value
+        return attr_value == self.value
 
-    def contains_regex(self, s):
+    def contains_regex(self, string):
         """
         Checks whether a string contains a regular expression.
 
@@ -118,13 +193,15 @@ class Filter:
             True if the string contains a regular expression, False otherwise.
         """
         try:
-            re.compile(s)
+            re.compile(string)
         except (re.error, TypeError):
             return False
         return True
 
     @staticmethod
-    def raise_type_error(op: str, x: Any, y: Any) -> None:
+    def raise_type_error(
+        operator: str, first_operand: Any, second_operand: Any
+    ) -> None:
         """
         Raises a TypeError indicating that the given operands are not supported for a given operator.
 
@@ -137,7 +214,7 @@ class Filter:
             TypeError: If the given operands are not supported for the given operator.
         """
         raise TypeError(
-            f"unsupported operand type(s) for {op}: '{type(x).__name__}' and '{type(y).__name__}'"
+            f"unsupported operand type(s) for {operator}: '{type(first_operand).__name__}' and '{type(second_operand).__name__}'"
         )
 
 
@@ -222,9 +299,8 @@ class Query:
         if isinstance(self.filters[0], Query):
             # opération OR
             return any(subquery.evaluate(obj) for subquery in self.filters)
-        else:
             # opération AND
-            return all(filter.evaluate(obj) for filter in self.filters)
+        return all(filter.evaluate(obj) for filter in self.filters)
 
 
 class OrmCollection(ImprovedList):
@@ -320,17 +396,16 @@ class OrmCollection(ImprovedList):
         if not key:
             if all(isinstance(item, (int, float)) for item in self):
                 return self.__class__(sorted(self))
-            elif all(isinstance(item, str) for item in self):
+            if all(isinstance(item, str) for item in self):
                 return self.__class__(sorted(self, key=len))
             raise ValueError("All elements in the list must be integers or floats.")
         if isinstance(key, str):
             return self.__class__(
                 sorted(self, key=lambda x: getattr(x, key), reverse=reverse)
             )
-        elif callable(key):
+        if callable(key):
             return self.__class__(sorted(self, key=key, reverse=reverse))
-        else:
-            raise TypeError("key must be a string attribute name or a function")
+        raise TypeError("key must be a string attribute name or a function")
 
     def group_by(self, key_func):
         """
@@ -433,7 +508,7 @@ class OrmCollection(ImprovedList):
         # If no args are provided, return a new collection with unique elements
         if not args and self._check_simple_type(self):
             return self.__class__(list(OrderedDict.fromkeys(self)))
-        elif not args and not self._check_simple_type(self):
+        if not args and not self._check_simple_type(self):
             raise ValueError("At least one field must be provided")
 
         # for field in args:
