@@ -1,3 +1,36 @@
+# pylint: disable=line-too-long
+"""
+A collection for storing and manipulating `ObjDict` objects.
+
+This module provides an implementation of the `ImprovedList` class, which is a subclass of the built-in `list` class
+that can store `ObjDict` objects. The `ImprovedList` class adds several useful methods for working with lists of 
+`ObjDict` objects, including methods for filtering, grouping, and sorting the list based on the values of their 
+`ObjDict` elements.
+Example usage:
+
+>>> from obj_dict import ObjDict
+>>> from improv_list import ImprovedList
+
+>>> # Create an ImprovedList of ObjDict objects
+>>> data = ImprovedList([
+>>>     ObjDict({'name': 'John', 'age': 30, 'country': 'USA'}),
+>>>     ObjDict({'name': 'Sarah', 'age': 25, 'country': 'Canada'}),
+>>>     ObjDict({'name': 'Mike', 'age': 35, 'country': 'USA'}),
+>>>     ObjDict({'name': 'Anna', 'age': 28, 'country': 'Canada'})
+>>> ])
+
+>>> # Filter the list by country
+>>> usa_data = data.filter_by('country', 'USA')
+
+>>> # Group the list by age
+>>> grouped_data = data.group_by('age')
+
+>>> # Sort the list by name in descending order
+>>> sorted_data = data.sort_by('name', reverse=True)
+
+For more information on the `ImprovedList` class and its methods, see the class documentation below.
+"""
+
 import pprint
 from typing import List, Any, Union, Callable, Optional
 
@@ -173,10 +206,10 @@ class ImprovedList(list):
                 def get_attribute(obj):
                     try:
                         return getattr(obj, attr_name)
-                    except AttributeError:
+                    except AttributeError as exc:
                         raise AttributeError(
                             f"{obj.__class__.__name__} object has no attribute '{attr_name}'"
-                        )
+                        ) from exc
 
                 if filter_func is None:
                     result = map(get_attribute, elements)

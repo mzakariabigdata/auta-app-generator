@@ -110,6 +110,6 @@ def main3():
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     # main2()
-    main3()
+    # main3()
