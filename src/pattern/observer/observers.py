@@ -74,9 +74,6 @@ class Payroll(AbsObserver):
     Inherits from AbsObserver.
     """
 
-    def __init__(self):
-        super().__init__()
-
     def update(self, subject):
         """
         Implementation of update method for Payroll.
@@ -95,9 +92,6 @@ class TaxAuthority(AbsObserver):
     Attributes:
     Inherits from AbsObserver.
     """
-
-    def __init__(self):
-        super().__init__()
 
     def update(self, subject):
         """

@@ -4,40 +4,90 @@ import abc
 
 
 class AbsVisitor(abc.ABC):
-    """Abs visitor
+    """
+    An abstract base class for visitors.
 
-    Args:
-        abc (abs): _description_
+    Attributes:
+    Inherits from abc.ABC.
     """
 
+    def __init__(self):
+        self.subject = None
+        self.strategy = None
+
     def visit(self, subject, strategy):
-        pass
+        """
+        Abstract method for visiting a subject with a given strategy.
+
+        Args:
+        subject: A subject object to visit.
+        strategy: A tax strategy object to use for tax calculation.
+        """
+
+    def set_strategy(self, strategy):
+        """
+        Sets the tax strategy to use for tax calculation.
+        """
+        self.strategy = strategy
+
+    def get_strategy(self):
+        """
+        Gets the current tax strategy.
+        """
+        return self.strategy
+
+    def set_subject(self, subject):
+        """
+        Sets the subject to visit.
+        """
+        self.subject = subject
+
+    def get_subject(self):
+        """
+        Gets the current subject.
+        """
+        return self.subject
 
 
 class PayrollVisitor(AbsVisitor):
-    """Pyroll visitor
+    """
+    A concrete visitor for payroll updates.
 
-    Args:
-        AbsVisitor (Visitor): _description_
+    Attributes:
+    Inherits from AbsVisitor.
     """
 
     def visit(self, subject, strategy):
+        """
+        Visit a subject and execute a given tax strategy for payroll updates.
+
+        Args:
+        subject: A subject object to visit.
+        strategy: A tax strategy object to use for tax calculation.
+        """
         if strategy is not None:
             print(
-                "TaxAuthorityVisitor; Employee name: {}, salary: {}, tax: {}".format(
-                    subject.name, subject.salary, strategy.execute(subject)
-                )
+                f"TaxAuthorityVisitor; Employee name: {subject.name}, salary: {subject.salary}, "
+                f"tax: {strategy.execute(subject)}"
             )
 
 
 class TaxAuthorityVisitor(AbsVisitor):
-    """Tax authority visitor
+    """
+    A concrete visitor for tax authority updates.
 
-    Args:
-        AbsVisitor (Visitor): _description_
+    Attributes:
+    Inherits from AbsVisitor.
     """
 
     def visit(self, subject, strategy):
+        """
+        Visit a subject and execute a given tax strategy for tax authority updates.
+
+        Args:
+        subject: A subject object to visit.
+        strategy: A tax strategy object to use for tax calculation.
+        """
         if strategy is not None:
             print(
                 f"TaxAuthorityVisitor; Employee name: {subject.name},"

@@ -32,7 +32,7 @@ For more information on the `ImprovedList` class and its methods, see the class 
 """
 
 import pprint
-from typing import List, Any, Union, Callable, Optional
+from typing import List, Any, Union, Callable
 
 
 class ImprovedList(list):
@@ -127,14 +127,93 @@ class ImprovedList(list):
         """Return a new ImprovedList containing only the elements for which filter_func returns True."""
         return self.__class__(filter(filter_func, self))
 
+    def convert_result(self, return_type, result):
+        """
+        Convert the result to the specified return type.
+
+        Args:
+            return_type (str): The desired return type ('ImprovedList' or 'list').
+            result (iterable): The result to be converted.
+
+        Returns:
+            The result converted to the specified return type.
+
+        Raises:
+            ValueError: If return_type is not 'ImprovedList' or 'list'.
+        """
+        if return_type == "ImprovedList":
+            return self.__class__(result)
+        if return_type == "list":
+            return list(result)
+        raise ValueError("return_type must be 'ImprovedList' or 'list'")
+
+    def when_called_method(self, called, filter_func, elements, *args, **kwargs):
+        """
+        Call a method on each element in the list.
+
+        Args:
+            called (str): The name of the method to call.
+            filter_func (callable or None): A function used to filter the list before calling the method.
+            elements (iterable): The list of elements to call the method on.
+            *args: Any additional positional arguments to be passed to the method.
+            **kwargs: Any additional keyword arguments to be passed to the method.
+
+        Returns:
+            An iterator containing the results of calling the method on each element in the list.
+
+        Raises:
+            TypeError: If the method is not callable.
+        """
+        method_name = called[1:]
+
+        def call_method(obj):
+            method = getattr(obj, method_name)
+            if not callable(method):
+                raise TypeError(f"{method_name} is not callable")
+            return method(*args, **kwargs)
+
+        if filter_func is None:
+            result = map(call_method, elements)
+        else:
+            result = map(call_method, filter(filter_func, elements))
+
+        return result
+
+    def when_called_attribut(self, called, filter_func, elements):
+        """
+        Retrieve the value of an attribute for each element in the list.
+
+        Args:
+            called (str): The name of the attribute to retrieve.
+            filter_func (callable or None): A function used to filter the list before retrieving the attribute.
+            elements (iterable): The list of elements to retrieve the attribute from.
+
+        Returns:
+            An iterator containing the value of the attribute for each element in the list.
+
+        Raises:
+            AttributeError: If the attribute does not exist for an element.
+        """
+        attr_name = called[1:]
+
+        def get_attribute(obj):
+            try:
+                return getattr(obj, attr_name)
+            except AttributeError as exc:
+                raise AttributeError(
+                    f"{obj.__class__.__name__} object has no attribute '{attr_name}'"
+                ) from exc
+
+        if filter_func is None:
+            result = map(get_attribute, elements)
+        else:
+            result = map(get_attribute, filter(filter_func, elements))
+
+        return result
+
     def map(
         self,
         called: Union[str, Callable],
-        filter_func: Optional[Callable] = None,
-        max_elements: Optional[int] = None,
-        reverse_order: bool = False,
-        sort_func: Optional[Callable] = None,
-        return_type: str = "ImprovedList",
         *args,
         **kwargs,
     ) -> Union["ImprovedList", List]:
@@ -162,6 +241,20 @@ class ImprovedList(list):
         Returns:
             An ImprovedList containing the results of applying the called function to each selected element.
         """
+        # argument
+        reverse_order: bool = kwargs.pop(
+            "reverse_order", False
+        )  # If True, the elements are processed in reverse order.
+        max_elements: int = kwargs.pop(
+            "max_elements", None
+        )  # The maximum number of elements to process. Defaults to None.
+        filter_func: Callable = kwargs.pop(
+            "filter_func", None
+        )  # A function that returns True for elements to be processed, False otherwise.
+        return_type: str = kwargs.pop(
+            "return_type", "ImprovedList"
+        )  # The type of object to return. Defaults to "ImprovedList".
+        sort_func: Callable = kwargs.pop("sort_func", None)  # A function used for sort
 
         if called is None:
             raise ValueError("called cannot be None")
@@ -188,33 +281,11 @@ class ImprovedList(list):
         # Appeler la méthode ou accéder à l'attribut pour chaque élément.
         elif isinstance(called, str):
             if called.startswith(":"):
-                method_name = called[1:]
-
-                def call_method(obj):
-                    method = getattr(obj, method_name)
-                    if not callable(method):
-                        raise TypeError(f"{method_name} is not callable")
-                    return method(*args, **kwargs)
-
-                if filter_func is None:
-                    result = map(call_method, elements)
-                else:
-                    result = map(call_method, filter(filter_func, elements))
+                result = self.when_called_method(
+                    called, filter_func, elements, *args, **kwargs
+                )
             elif called.startswith("."):
-                attr_name = called[1:]
-
-                def get_attribute(obj):
-                    try:
-                        return getattr(obj, attr_name)
-                    except AttributeError as exc:
-                        raise AttributeError(
-                            f"{obj.__class__.__name__} object has no attribute '{attr_name}'"
-                        ) from exc
-
-                if filter_func is None:
-                    result = map(get_attribute, elements)
-                else:
-                    result = map(get_attribute, filter(filter_func, elements))
+                result = self.when_called_attribut(called, filter_func, elements)
             else:
                 raise TypeError(
                     "called must be a string start with ':' for obj method or '.' obj attribute, or a callable"
@@ -225,8 +296,4 @@ class ImprovedList(list):
                 "called must be a string start with ':' for obj method or '.' obj attribute, or a callable"
             )
         # Convertir le résultat en ImprovedList ou en list en fonction de return_type.
-        if return_type == "ImprovedList":
-            return self.__class__(result)
-        if return_type == "list":
-            return list(result)
-        raise ValueError("return_type must be 'ImprovedList' or 'list'")
+        return self.convert_result(return_type, result)
